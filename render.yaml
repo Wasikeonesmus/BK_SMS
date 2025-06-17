@@ -4,10 +4,8 @@ services:
     env: python
     plan: free
     buildCommand: |
-      echo "Installing packages without Pillow first..."
-      pip install --no-cache-dir -r requirements-no-pillow.txt
-      echo "Attempting to install Pillow separately..."
-      pip install --no-cache-dir --only-binary=all Pillow==3.4.2 || echo "Pillow installation failed, continuing without it"
+      echo "Installing all packages..."
+      pip install --no-cache-dir -r requirements.txt
     startCommand: |
       python manage.py migrate
       gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
