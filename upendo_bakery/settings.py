@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
-import dj_database_url
 
 # Load environment variables from .env file
 load_dotenv()
@@ -21,8 +20,20 @@ load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Quick-start development settings - unsuitable for production
+# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
+
+# Get allowed hosts from environment variable or use default
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.136').split(',')
+
 # Initialize Sentry only in production
-if not os.getenv('DEBUG', 'True') == 'True':
+if not DEBUG:
     import sentry_sdk
     from sentry_sdk.integrations.django import DjangoIntegration
     
@@ -33,19 +44,6 @@ if not os.getenv('DEBUG', 'True') == 'True':
         send_default_pii=True,
         environment=os.getenv('ENVIRONMENT', 'development'),
     )
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-your-secret-key-here')
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
-# Get allowed hosts from environment variable or use default
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,192.168.1.136').split(',')
-
 
 # Application definition
 
@@ -106,6 +104,9 @@ if DEBUG:
         }
     }
 else:
+    # Import dj_database_url only for production
+    import dj_database_url
+    
     # Use DATABASE_URL from Render or fallback to individual settings
     DATABASE_URL = os.getenv('DATABASE_URL')
     if DATABASE_URL:
