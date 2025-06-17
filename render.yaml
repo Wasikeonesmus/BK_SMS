@@ -3,12 +3,12 @@ services:
     name: upendo-bakery
     env: python
     plan: free
-    buildCommand: |
-      pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
       export DJANGO_SETTINGS_MODULE=upendo_bakery.settings_prod
       python manage.py migrate
       python manage.py collectstatic --noinput
-    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+      gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
