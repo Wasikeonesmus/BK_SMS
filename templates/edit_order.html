@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Edit Order #{{ order.id }}</h4>
+                    <a href="{% url 'orders' %}" class="btn btn-secondary">Back to Orders</a>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <h5>Order Details</h5>
+                                <div class="mb-3">
+                                    <label for="id_status" class="form-label">Status</label>
+                                    {{ form.status }}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_payment_type" class="form-label">Payment Type</label>
+                                    {{ form.payment_type }}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_delivery_type" class="form-label">Delivery Type</label>
+                                    {{ form.delivery_type }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Customer Information</h5>
+                                <div class="mb-3">
+                                    <label for="id_customer" class="form-label">Customer</label>
+                                    {{ form.customer }}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_delivery_address" class="form-label">Delivery Address</label>
+                                    {{ form.delivery_address }}
+                                </div>
+                                <div class="mb-3">
+                                    <label for="id_delivery_notes" class="form-label">Delivery Notes</label>
+                                    {{ form.delivery_notes }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

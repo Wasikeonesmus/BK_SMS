@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from .models import User, Ingredient, Customer
+from .models import User, Ingredient, Customer, Order
 import re
 
 User = get_user_model()
@@ -67,4 +67,17 @@ class IngredientForm(forms.ModelForm):
             'unit': forms.TextInput(attrs={'class': 'form-control'}),
             'alert_level': forms.NumberInput(attrs={'class': 'form-control'}),
             'image': forms.FileInput(attrs={'class': 'form-control'})
+        }
+
+class OrderForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['status', 'payment_type', 'delivery_type', 'customer', 'delivery_address', 'delivery_notes']
+        widgets = {
+            'status': forms.Select(attrs={'class': 'form-select'}),
+            'payment_type': forms.Select(attrs={'class': 'form-select'}),
+            'delivery_type': forms.Select(attrs={'class': 'form-select'}),
+            'customer': forms.Select(attrs={'class': 'form-select'}),
+            'delivery_address': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'delivery_notes': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
         } 

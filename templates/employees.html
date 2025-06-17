@@ -12,53 +12,97 @@
         </a>
     </div>
 
-    <!-- Employees Table -->
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Position</th>
-                            <th>Role</th>
-                            <th>Salary</th>
-                            <th>Contact</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for employee in employees %}
-                        <tr id="employee-row-{{ employee.id }}">
-                            <td>{{ employee.user.get_full_name }}</td>
-                            <td>{{ employee.position }}</td>
-                            <td>{{ employee.user.get_role_display }}</td>
-                            <td>KES {{ employee.salary }}</td>
-                            <td>
-                                <div>Phone: {{ employee.user.phone }}</div>
-                                <div>Email: {{ employee.user.email }}</div>
-                            </td>
-                            <td>
-                                <a href="{% url 'edit_employee' employee.id %}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-edit"></i> Edit
-                                </a>
-                                <form method="post" action="{% url 'delete_employee' employee.id %}" class="delete-employee-form" data-employee-id="{{ employee.id }}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-sm btn-danger delete-employee-btn">
-                                        <i class="fas fa-trash"></i> Delete
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center">No employees found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Desktop View -->
+    <div class="d-none d-md-block">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Position</th>
+                                <th>Role</th>
+                                <th>Salary</th>
+                                <th>Contact</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for employee in employees %}
+                            <tr id="employee-row-{{ employee.id }}">
+                                <td>{{ employee.user.get_full_name }}</td>
+                                <td>{{ employee.position }}</td>
+                                <td>{{ employee.user.get_role_display }}</td>
+                                <td>KES {{ employee.salary }}</td>
+                                <td>
+                                    <div>Phone: {{ employee.user.phone }}</div>
+                                    <div>Email: {{ employee.user.email }}</div>
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{% url 'edit_employee' employee.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <form method="post" action="{% url 'delete_employee' employee.id %}" class="delete-employee-form d-inline" data-employee-id="{{ employee.id }}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-sm btn-danger delete-employee-btn">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center">No employees found.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
+    </div>
+
+    <!-- Mobile View -->
+    <div class="d-md-none">
+        {% for employee in employees %}
+        <div class="card mb-3" id="employee-card-{{ employee.id }}">
+            <div class="card-body">
+                <h5 class="card-title">{{ employee.user.get_full_name }}</h5>
+                <div class="mb-2">
+                    <strong>Position:</strong> {{ employee.position }}
+                </div>
+                <div class="mb-2">
+                    <strong>Role:</strong> {{ employee.user.get_role_display }}
+                </div>
+                <div class="mb-2">
+                    <strong>Salary:</strong> KES {{ employee.salary }}
+                </div>
+                <div class="mb-2">
+                    <strong>Contact:</strong>
+                    <div>Phone: {{ employee.user.phone }}</div>
+                    <div>Email: {{ employee.user.email }}</div>
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+                    <a href="{% url 'edit_employee' employee.id %}" class="btn btn-warning">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <form method="post" action="{% url 'delete_employee' employee.id %}" class="delete-employee-form" data-employee-id="{{ employee.id }}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger delete-employee-btn">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="alert alert-info text-center">
+            No employees found.
+        </div>
+        {% endfor %}
     </div>
 </div>
 
@@ -113,11 +157,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Remove the row from the table
+                    // Remove the row/card from the view
                     const row = document.getElementById(`employee-row-${employeeId}`);
-                    if (row) {
-                        row.remove();
-                    }
+                    const card = document.getElementById(`employee-card-${employeeId}`);
+                    if (row) row.remove();
+                    if (card) card.remove();
                     // Show success message
                     alert('Employee deleted successfully');
                 } else {

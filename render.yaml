@@ -2,14 +2,11 @@ services:
   - type: web
     name: upendo-bakery
     env: python
-    buildCommand: |
-      pip install -r requirements.txt
-      python manage.py collectstatic --noinput
-      python manage.py migrate
-    startCommand: gunicorn upendo_bakery.wsgi:application
+    buildCommand: chmod +x build.sh && ./build.sh
+    startCommand: gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.0
+        value: 3.11.7
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -20,6 +17,19 @@ services:
         fromDatabase:
           name: upendo-bakery-db
           property: connectionString
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+    packages:
+      - libjpeg-dev
+      - libpng-dev
+      - libfreetype6-dev
+      - liblcms2-dev
+      - libwebp-dev
+      - libtiff5-dev
+      - libopenjp2-7-dev
+      - libzbar0
+      - zlib1g-dev
+      - libjpeg62-turbo-dev
 
 databases:
   - name: upendo-bakery-db

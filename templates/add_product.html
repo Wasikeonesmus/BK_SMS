@@ -99,7 +99,7 @@
                                 </div>
 
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
                                         <label for="category" class="form-label">Category</label>
                                         <select class="form-select" id="category" name="category" required>
                                             <option value="">Select Category</option>
@@ -108,7 +108,21 @@
                                             {% endfor %}
                                         </select>
                                     </div>
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="unit" class="form-label">Unit of Measurement</label>
+                                        <select class="form-select" id="unit" name="unit" required>
+                                            <option value="piece">Piece</option>
+                                            <option value="kg">Kilogram</option>
+                                            <option value="g">Gram</option>
+                                            <option value="l">Liter</option>
+                                            <option value="ml">Milliliter</option>
+                                            <option value="dozen">Dozen</option>
+                                            <option value="pack">Pack</option>
+                                            <option value="box">Box</option>
+                                            <option value="tray">Tray</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4 mb-3">
                                         <label for="image" class="form-label">Product Image</label>
                                         <input type="file" class="form-control" id="image" name="image" accept="image/*">
                                     </div>

@@ -43,6 +43,18 @@ class Category(models.Model):
         verbose_name_plural = "Categories"
 
 class Product(models.Model):
+    UNIT_CHOICES = [
+        ('piece', 'Piece'),
+        ('kg', 'Kilogram'),
+        ('g', 'Gram'),
+        ('l', 'Liter'),
+        ('ml', 'Milliliter'),
+        ('dozen', 'Dozen'),
+        ('pack', 'Pack'),
+        ('box', 'Box'),
+        ('tray', 'Tray'),
+    ]
+    
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
@@ -52,6 +64,7 @@ class Product(models.Model):
     reorder_point = models.PositiveIntegerField(default=10)
     current_stock = models.PositiveIntegerField(default=0)
     cost_price = models.DecimalField(max_digits=10, decimal_places=2)
+    unit = models.CharField(max_length=10, choices=UNIT_CHOICES, default='piece')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -253,12 +266,20 @@ class Order(models.Model):
         ('delivery', 'Delivery'),
     ]
 
+    PAYMENT_TYPE_CHOICES = [
+        ('cash', 'Cash'),
+        ('mpesa', 'M-Pesa'),
+        ('card', 'Card'),
+        ('loyalty', 'Loyalty Points'),
+    ]
+
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     delivery_address = models.TextField(blank=True)
     delivery_notes = models.TextField(blank=True)
     delivery_type = models.CharField(max_length=20, choices=DELIVERY_TYPE_CHOICES, default='pickup')
+    payment_type = models.CharField(max_length=20, choices=PAYMENT_TYPE_CHOICES, default='cash')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
@@ -268,10 +289,10 @@ class Order(models.Model):
 
     @property
     def total_quantity(self):
-        return sum(item.quantity for item in self.orderitem_set.all())
+        return sum(item.quantity for item in self.items.all())
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     variant = models.ForeignKey(ProductVariant, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.PositiveIntegerField()

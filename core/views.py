@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.contrib import messages
 from django.http import JsonResponse
 from .models import Sale, Order, Ingredient, Expense, Product, MpesaTransaction, Customer, OrderItem, Employee, User, Supplier, PurchaseOrder, PurchaseOrderItem, StockUpdate, Category, StockHistory, Settings
-from .forms import CustomUserCreationForm, IngredientForm, CustomerForm
+from .forms import CustomUserCreationForm, IngredientForm, CustomerForm, OrderForm
 import json
 import requests
 import base64
@@ -18,6 +18,8 @@ import csv
 import re
 from django.urls import reverse
 from django.db import transaction
+from django.http import HttpResponse
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +63,8 @@ def dashboard(request):
     pending_orders = Order.objects.filter(status='pending').count()
     
     # Get low stock items
-    low_stock_items = Product.objects.filter(current_stock__lte=F('reorder_point')).count()
+    low_stock_items = Product.objects.filter(current_stock__lte=F('reorder_point'))
+    low_stock_count = low_stock_items.count()
     
     # Get today's expenses
     today_expenses = Expense.objects.filter(created_at__date=today).aggregate(
@@ -74,13 +77,18 @@ def dashboard(request):
     # Get pending orders list
     pending_orders_list = Order.objects.select_related('customer', 'created_by').filter(status='pending')[:5]
     
+    # Get total products count
+    total_products = Product.objects.count()
+    
     context = {
         'today_sales': today_sales,
         'pending_orders': pending_orders,
         'low_stock_items': low_stock_items,
+        'low_stock_count': low_stock_count,
         'today_expenses': today_expenses,
         'recent_sales': recent_sales,
         'pending_orders_list': pending_orders_list,
+        'total_products': total_products,
     }
     return render(request, 'dashboard.html', context)
 
@@ -214,8 +222,6 @@ def add_order(request):
             # Get form data
             customer_name = request.POST.get('customer_name')
             phone = request.POST.get('phone')
-            product_id = request.POST.get('product')
-            qty = int(request.POST.get('qty'))
             delivery_type = request.POST.get('delivery_type')
 
             # Clean phone number
@@ -241,48 +247,76 @@ def add_order(request):
                     address=request.POST.get('address', '')
                 )
 
-            # Process the order
-            product = get_object_or_404(Product, id=product_id)
+            # Calculate total amount and create order items
+            total_amount = 0
+            order_items = []
             
-            # Check stock
-            if product.current_stock < qty:
-                messages.error(request, f'Not enough stock for {product.name}. Available: {product.current_stock}')
-                return redirect('orders')
+            # Get all items from the form
+            items = []
+            for key in request.POST:
+                if key.startswith('items[') and key.endswith('][product_id]'):
+                    index = key.split('[')[1].split(']')[0]
+                    product_id = request.POST.get(f'items[{index}][product_id]')
+                    quantity = request.POST.get(f'items[{index}][quantity]')
+                    if product_id and quantity:
+                        items.append({
+                            'product_id': product_id,
+                            'quantity': int(quantity)
+                        })
 
-            total_amount = product.price * qty
-            delivery_address = request.POST.get('delivery_address', '')
-            delivery_notes = request.POST.get('delivery_notes', '')
+            # Process each item
+            for item in items:
+                product = get_object_or_404(Product, id=item['product_id'])
+                qty = item['quantity']
+                
+                # Check stock
+                if product.current_stock < qty:
+                    messages.error(request, f'Not enough stock for {product.name}. Available: {product.current_stock}')
+                    return redirect('orders')
+                
+                # Add to total amount
+                total_amount += product.price * qty
+                
+                # Add to order items list
+                order_items.append({
+                    'product': product,
+                    'quantity': qty,
+                    'price': product.price
+                })
 
             # Create the order
             order = Order.objects.create(
                 customer=customer,
                 status='pending',
                 total_amount=total_amount,
-                delivery_address=delivery_address,
-                delivery_notes=delivery_notes,
+                delivery_address=request.POST.get('delivery_address', ''),
+                delivery_notes=request.POST.get('delivery_notes', ''),
                 delivery_type=delivery_type,
                 created_by=request.user
             )
 
-            # Add the product and quantity via OrderItem
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                quantity=qty,
-                price=product.price
-            )
+            # Create order items and update stock
+            for item in order_items:
+                # Create order item
+                OrderItem.objects.create(
+                    order=order,
+                    product=item['product'],
+                    quantity=item['quantity'],
+                    price=item['price']
+                )
 
-            # Update product stock
-            product.current_stock -= qty
-            product.save()
+                # Update product stock
+                product = item['product']
+                product.current_stock -= item['quantity']
+                product.save()
 
-            # Record stock history
-            StockHistory.objects.create(
-                product=product,
-                quantity_change=-qty,
-                notes=f'Ordered in order #{order.id}',
-                created_by=request.user
-            )
+                # Record stock history
+                StockHistory.objects.create(
+                    product=product,
+                    quantity_change=-item['quantity'],
+                    notes=f'Ordered in order #{order.id}',
+                    created_by=request.user
+                )
 
             messages.success(request, 'Order added successfully!')
             return redirect('orders')
@@ -408,6 +442,17 @@ def reports(request):
         ).annotate(
             total=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
         ).order_by('-total')
+
+        # Calculate daily sales for the chart
+        daily_sales = sales.values('date__date').annotate(
+            total=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
+        ).order_by('date__date')
+
+        # Prepare data for the chart
+        sales_data = {
+            'labels': [sale['date__date'].strftime('%Y-%m-%d') for sale in daily_sales],
+            'values': [float(sale['total']) for sale in daily_sales]
+        }
         
         context = {
             'start_date': start_date,
@@ -419,6 +464,7 @@ def reports(request):
             'sales_by_payment': sales_by_payment,
             'sales': sales,
             'expenses': expenses,
+            'sales_data': sales_data,  # Add the sales data for the chart
         }
         
         return render(request, 'reports.html', context)
@@ -1147,8 +1193,20 @@ def process_payment(request):
             if not payment_type:
                 return JsonResponse({'error': 'Payment method is required'}, status=400)
                 
-            if payment_type == 'mpesa' and not mpesa_phone:
-                return JsonResponse({'error': 'M-Pesa phone number is required'}, status=400)
+            if payment_type == 'mpesa':
+                if not mpesa_phone:
+                    return JsonResponse({'error': 'M-Pesa phone number is required'}, status=400)
+                
+                # Format phone number
+                mpesa_phone = re.sub(r'\D', '', mpesa_phone)  # Remove non-digits
+                if mpesa_phone.startswith('254'):
+                    mpesa_phone = '0' + mpesa_phone[3:]
+                elif not mpesa_phone.startswith('0'):
+                    mpesa_phone = '0' + mpesa_phone
+                
+                # Validate phone number format
+                if not re.match(r'^0[7-9][0-9]{8}$', mpesa_phone):
+                    return JsonResponse({'error': 'Invalid M-Pesa phone number format'}, status=400)
             
             # Validate stock for all items
             stock_errors = []
@@ -1222,11 +1280,20 @@ def process_payment(request):
                 
                 # If it's an M-Pesa payment, create a transaction record
                 if payment_type == 'mpesa':
-                    MpesaTransaction.objects.create(
-                        phone=mpesa_phone,
-                        amount=total_amount,
-                        status='pending'
-                    )
+                    try:
+                        mpesa_response = initiate_mpesa_payment(mpesa_phone, total_amount)
+                        MpesaTransaction.objects.create(
+                            phone=mpesa_phone,
+                            amount=total_amount,
+                            transaction_id=mpesa_response.get('CheckoutRequestID'),
+                            status='pending'
+                        )
+                    except ValueError as e:
+                        logger.error(f"M-Pesa payment initiation failed: {str(e)}")
+                        return JsonResponse({'error': str(e)}, status=400)
+                    except Exception as e:
+                        logger.error(f"Unexpected error during M-Pesa payment: {str(e)}")
+                        return JsonResponse({'error': f'Error processing M-Pesa payment: {str(e)}'}, status=400)
                 
                 if first_sale is None:
                     raise ValueError("No sales were created")
@@ -1307,7 +1374,7 @@ def customer_details(request, customer_id):
                     'product_name': item.product.name,
                     'quantity': item.quantity,
                     'price': float(item.price)
-                } for item in order.orderitem_set.all()]
+                } for item in order.items.all()]
             } for order in orders]
         }
         return JsonResponse(data)
@@ -1429,7 +1496,22 @@ def settings_view(request):
         try:
             # Get all settings from the form
             for setting in Settings.objects.all():
-                new_value = request.POST.get(f'setting_{setting.id}')
+                setting_key = f'setting_{setting.id}'
+                
+                # Handle file upload for logo
+                if setting.name == 'logo' and request.FILES.get(setting_key):
+                    file = request.FILES[setting_key]
+                    # Save the file to media directory
+                    file_path = f'settings/logo/{file.name}'
+                    with open(os.path.join(settings.MEDIA_ROOT, file_path), 'wb+') as destination:
+                        for chunk in file.chunks():
+                            destination.write(chunk)
+                    setting.value = file_path
+                    setting.save()
+                    continue
+                
+                # Handle other settings
+                new_value = request.POST.get(setting_key)
                 if new_value is not None and new_value != setting.value:
                     # Handle boolean settings
                     if setting.name in ['low_stock_alert', 'email_notifications', 'enable_mpesa', 'enable_cash', 'enable_card']:
@@ -1451,3 +1533,42 @@ def settings_view(request):
         'settings_by_type': settings_by_type,
         'title': 'System Settings'
     })
+
+@login_required
+def view_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    return render(request, 'view_order.html', {'order': order})
+
+@login_required
+def edit_order(request, order_id):
+    order = get_object_or_404(Order, id=order_id)
+    if request.method == 'POST':
+        form = OrderForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Order updated successfully.')
+            return redirect('orders')
+    else:
+        form = OrderForm(instance=order)
+    return render(request, 'edit_order.html', {'form': form, 'order': order})
+
+@login_required
+def export_orders(request):
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="orders.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Order ID', 'Customer', 'Date', 'Status', 'Total Amount', 'Payment Type'])
+    
+    orders = Order.objects.all().select_related('customer')
+    for order in orders:
+        writer.writerow([
+            order.id,
+            order.customer.name if order.customer else 'Walk-in Customer',
+            order.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+            order.status,
+            order.total_amount,
+            order.payment_type
+        ])
+    
+    return response

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Order #{{ order.id }}</h4>
+                    <div>
+                        <a href="{% url 'edit_order' order.id %}" class="btn btn-primary">Edit Order</a>
+                        <a href="{% url 'orders' %}" class="btn btn-secondary">Back to Orders</a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Order Details</h5>
+                            <p><strong>Date:</strong> {{ order.created_at|date:"F j, Y, g:i a" }}</p>
+                            <p><strong>Status:</strong> <span class="badge bg-{{ order.status|lower }}">{{ order.status }}</span></p>
+                            <p><strong>Payment Type:</strong> {{ order.payment_type }}</p>
+                            <p><strong>Total Amount:</strong> KES {{ order.total_amount }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Customer Information</h5>
+                            {% if order.customer %}
+                                <p><strong>Name:</strong> {{ order.customer.name }}</p>
+                                <p><strong>Phone:</strong> {{ order.customer.phone }}</p>
+                                <p><strong>Email:</strong> {{ order.customer.email }}</p>
+                            {% else %}
+                                <p>Walk-in Customer</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <h5>Order Items</h5>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Product</th>
+                                    <th>Quantity</th>
+                                    <th>Price</th>
+                                    <th>Subtotal</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in order.items.all %}
+                                <tr>
+                                    <td>{{ item.product.name }}</td>
+                                    <td>{{ item.quantity }}</td>
+                                    <td>KES {{ item.price }}</td>
+                                    <td>KES {{ item.subtotal }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="3" class="text-end"><strong>Total:</strong></td>
+                                    <td><strong>KES {{ order.total_amount }}</strong></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

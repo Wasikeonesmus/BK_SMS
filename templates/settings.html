@@ -9,7 +9,7 @@
                     <h3 class="mb-0"><i class="fas fa-cog me-2"></i>System Settings</h3>
                 </div>
                 <div class="card-body">
-                    <form method="post" class="needs-validation" novalidate>
+                    <form method="post" class="needs-validation" novalidate enctype="multipart/form-data">
                         {% csrf_token %}
                         
                         {% for setting_type, settings in settings_by_type.items %}
@@ -53,6 +53,11 @@
                                                 </span>
                                                 {% endif %}
                                             </div>
+                                            {% if setting.value %}
+                                            <div class="mt-2">
+                                                <img src="{{ setting.value.url }}" alt="Current Logo" class="img-thumbnail" style="max-height: 50px;">
+                                            </div>
+                                            {% endif %}
                                             {% elif 'color' in setting.name %}
                                             <div class="input-group">
                                                 <input type="color" 
@@ -109,19 +114,85 @@
 <script>
     // Apply color settings to UI
     document.addEventListener('DOMContentLoaded', function() {
+        // Function to apply color to elements
+        function applyColor(color, type) {
+            const root = document.documentElement;
+            const elements = document.querySelectorAll('.bg-primary, .btn-primary, .text-primary');
+            
+            switch(type) {
+                case 'primary':
+                    root.style.setProperty('--primary-color', color);
+                    elements.forEach(el => {
+                        if (el.classList.contains('bg-primary')) {
+                            el.style.backgroundColor = color;
+                        }
+                        if (el.classList.contains('btn-primary')) {
+                            el.style.backgroundColor = color;
+                            el.style.borderColor = color;
+                        }
+                        if (el.classList.contains('text-primary')) {
+                            el.style.color = color;
+                        }
+                    });
+                    break;
+                case 'secondary':
+                    root.style.setProperty('--secondary-color', color);
+                    document.querySelectorAll('.bg-secondary, .btn-secondary, .text-secondary').forEach(el => {
+                        if (el.classList.contains('bg-secondary')) {
+                            el.style.backgroundColor = color;
+                        }
+                        if (el.classList.contains('btn-secondary')) {
+                            el.style.backgroundColor = color;
+                            el.style.borderColor = color;
+                        }
+                        if (el.classList.contains('text-secondary')) {
+                            el.style.color = color;
+                        }
+                    });
+                    break;
+                case 'accent':
+                    root.style.setProperty('--accent-color', color);
+                    document.querySelectorAll('.bg-success, .btn-success, .text-success').forEach(el => {
+                        if (el.classList.contains('bg-success')) {
+                            el.style.backgroundColor = color;
+                        }
+                        if (el.classList.contains('btn-success')) {
+                            el.style.backgroundColor = color;
+                            el.style.borderColor = color;
+                        }
+                        if (el.classList.contains('text-success')) {
+                            el.style.color = color;
+                        }
+                    });
+                    break;
+            }
+        }
+
+        // Initialize colors from current values
         const colorInputs = document.querySelectorAll('input[type="color"]');
+        colorInputs.forEach(input => {
+            const settingName = input.id.replace('setting_', '');
+            if (settingName.includes('primary')) {
+                applyColor(input.value, 'primary');
+            } else if (settingName.includes('secondary')) {
+                applyColor(input.value, 'secondary');
+            } else if (settingName.includes('accent')) {
+                applyColor(input.value, 'accent');
+            }
+        });
+
+        // Listen for color changes
         colorInputs.forEach(input => {
             input.addEventListener('change', function() {
                 const color = this.value;
                 const settingName = this.id.replace('setting_', '');
                 
-                // Apply color to specific elements based on setting name
                 if (settingName.includes('primary')) {
-                    document.documentElement.style.setProperty('--primary-color', color);
+                    applyColor(color, 'primary');
                 } else if (settingName.includes('secondary')) {
-                    document.documentElement.style.setProperty('--secondary-color', color);
+                    applyColor(color, 'secondary');
                 } else if (settingName.includes('accent')) {
-                    document.documentElement.style.setProperty('--accent-color', color);
+                    applyColor(color, 'accent');
                 }
             });
         });

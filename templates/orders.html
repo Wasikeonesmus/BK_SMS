@@ -4,21 +4,40 @@
 {% block title %}Orders - Upendo Mini Bakery{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid px-2 px-md-4">
     <div class="row">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Orders</h3>
-                    <div class="card-tools">
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOrderModal">
-                            <i class="fas fa-plus"></i> Add New Order
-                        </button>
+            <div class="card shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <h3 class="card-title h5 mb-0">Orders</h3>
+                            <div class="dropdown">
+                                <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="?status=all">All Orders</a></li>
+                                    <li><a class="dropdown-item" href="?status=pending">Pending</a></li>
+                                    <li><a class="dropdown-item" href="?status=processing">Processing</a></li>
+                                    <li><a class="dropdown-item" href="?status=completed">Completed</a></li>
+                                    <li><a class="dropdown-item" href="?status=cancelled">Cancelled</a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-primary" onclick="exportOrders()">
+                                <i class="fas fa-download"></i> Export
+                            </button>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addOrderModal">
+                                <i class="fas fa-plus"></i> New Order
+                            </button>
+                        </div>
                     </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     {% if messages %}
-                    <div class="messages">
+                    <div class="messages p-3">
                         {% for message in messages %}
                         <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                             {{ message }}
@@ -29,52 +48,74 @@
                     {% endif %}
 
                     <div class="table-responsive">
-                        <table class="table table-bordered table-striped">
-                            <thead>
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
                                 <tr>
-                                    <th>Date</th>
-                                    <th>Customer</th>
-                                    <th>Phone</th>
-                                    <th>Product</th>
-                                    <th>Quantity</th>
-                                    <th>Delivery Type</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
+                                    <th class="text-nowrap">Order ID</th>
+                                    <th class="text-nowrap">Customer</th>
+                                    <th class="d-none d-md-table-cell">Items</th>
+                                    <th class="text-nowrap">Total</th>
+                                    <th class="text-nowrap">Status</th>
+                                    <th class="text-nowrap">Date</th>
+                                    <th class="text-nowrap">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for order in orders %}
                                 <tr>
-                                    <td>{{ order.created_at|date:"Y-m-d H:i" }}</td>
-                                    <td>{{ order.customer.name }}</td>
-                                    <td>{{ order.customer.phone }}</td>
-                                    <td>
-                                        {% for item in order.orderitem_set.all %}
-                                        {{ item.product.name }} ({{ item.quantity }})<br>
-                                        {% endfor %}
+                                    <td class="text-nowrap" data-label="Order ID">
+                                        <span class="fw-medium">#{{ order.id }}</span>
                                     </td>
-                                    <td>{{ order.total_quantity }}</td>
-                                    <td>{{ order.get_delivery_type_display }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ order.status|lower }}">
-                                            {{ order.get_status_display }}
-                                        </span>
+                                    <td class="text-nowrap" data-label="Customer">
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-medium">{{ order.customer.name }}</span>
+                                            <small class="text-muted">{{ order.customer.phone }}</small>
+                                        </div>
                                     </td>
-                                    <td>
-                                        <button class="btn btn-sm btn-info" onclick="viewOrder({{ order.id }})">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-warning" onclick="updateOrderStatus({{ order.id }})">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteOrder({{ order.id }})">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                    <td class="d-none d-md-table-cell" data-label="Items">
+                                        <div class="d-flex flex-column">
+                                            {% for item in order.items.all %}
+                                            <span class="text-truncate" style="max-width: 200px;">
+                                                {{ item.product.name }} ({{ item.quantity }})
+                                            </span>
+                                            {% endfor %}
+                                        </div>
+                                    </td>
+                                    <td class="text-nowrap" data-label="Total">
+                                        <span class="fw-medium">Ksh {{ order.total_amount }}</span>
+                                    </td>
+                                    <td class="text-nowrap" data-label="Status">
+                                        <span class="badge bg-{{ order.status|lower }} px-3 py-2">{{ order.status }}</span>
+                                    </td>
+                                    <td class="text-nowrap" data-label="Date">
+                                        <span class="text-muted">{{ order.created_at|date:"M d, Y" }}</span>
+                                    </td>
+                                    <td class="text-nowrap" data-label="Actions">
+                                        <div class="btn-group">
+                                            <a href="{% url 'order_details' order.id %}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-eye"></i>
+                                                <span class="d-none d-md-inline"> View</span>
+                                            </a>
+                                            <a href="{% url 'edit_order' order.id %}" class="btn btn-sm btn-outline-warning">
+                                                <i class="fas fa-edit"></i>
+                                                <span class="d-none d-md-inline"> Edit</span>
+                                            </a>
+                                            <a href="{% url 'delete_order' order.id %}" class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('Are you sure you want to cancel this order?')">
+                                                <i class="fas fa-times"></i>
+                                                <span class="d-none d-md-inline"> Cancel</span>
+                                            </a>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="8" class="text-center">No orders found.</td>
+                                    <td colspan="7" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                                            <p class="mb-0">No orders found</p>
+                                        </div>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -86,109 +127,172 @@
     </div>
 </div>
 
+<style>
+@media screen and (max-width: 767px) {
+    .table {
+        display: block;
+    }
+    
+    .table thead {
+        display: none;
+    }
+    
+    .table tbody {
+        display: block;
+    }
+    
+    .table tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid #dee2e6;
+        border-radius: 0.25rem;
+        padding: 0.5rem;
+    }
+    
+    .table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border: none;
+        border-bottom: 1px solid #dee2e6;
+    }
+    
+    .table td:last-child {
+        border-bottom: none;
+    }
+    
+    .table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: 1rem;
+    }
+    
+    .table td .btn-group {
+        margin-left: auto;
+    }
+}
+</style>
+
 <!-- Add Order Modal -->
 <div class="modal fade" id="addOrderModal" tabindex="-1" aria-labelledby="addOrderModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="addOrderModalLabel">Add New Order</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <form id="addOrderForm" method="POST" action="{% url 'add_order' %}">
-                {% csrf_token %}
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="customer_name">Customer Name</label>
-                                <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+            <div class="modal-body">
+                <form id="addOrderForm" method="POST" action="{% url 'add_order' %}">
+                    {% csrf_token %}
+                    <div class="row g-3">
+                        <!-- Customer Information Section -->
+                        <div class="col-12">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Customer Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label for="customer_name" class="form-label">Customer Name</label>
+                                            <input type="text" class="form-control" id="customer_name" name="customer_name" required>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label for="phone" class="form-label">Phone Number</label>
+                                            <input type="tel" class="form-control" id="phone" name="phone" 
+                                                   pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number" required>
+                                            <small class="form-text text-muted">Enter a valid 10-digit phone number starting with 0</small>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label for="email" class="form-label">Email (Optional)</label>
+                                            <input type="email" class="form-control" id="email" name="email">
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label for="address" class="form-label">Address (Optional)</label>
+                                            <input type="text" class="form-control" id="address" name="address">
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="phone">Phone Number</label>
-                                <input type="tel" class="form-control" id="phone" name="phone" 
-                                       pattern="[0-9]{10}" title="Please enter a valid 10-digit phone number" required>
-                                <small class="form-text text-muted">Enter a valid 10-digit phone number starting with 0</small>
+
+                        <!-- Order Items Section -->
+                        <div class="col-12">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">Order Items</h6>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="addOrderItem()">
+                                        <i class="fas fa-plus"></i> Add Item
+                                    </button>
+                                </div>
+                                <div class="card-body">
+                                    <div id="orderItems">
+                                        <div class="row g-3 mb-3 order-item">
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Product</label>
+                                                <select class="form-select product-select" name="items[0][product_id]" required>
+                                                    <option value="">Select a product</option>
+                                                    {% for product in products %}
+                                                    <option value="{{ product.id }}" data-stock="{{ product.current_stock }}">
+                                                        {{ product.name }} (Stock: {{ product.current_stock }})
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label class="form-label">Quantity</label>
+                                                <input type="number" class="form-control quantity-input" name="items[0][quantity]" min="1" required>
+                                                <small class="form-text text-muted">Available stock: <span class="available-stock">0</span></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Information Section -->
+                        <div class="col-12">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0">Delivery Information</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label for="delivery_type" class="form-label">Delivery Type</label>
+                                            <select class="form-select" id="delivery_type" name="delivery_type" required>
+                                                <option value="pickup">Pickup</option>
+                                                <option value="delivery">Delivery</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="delivery_address" class="form-label">Delivery Address</label>
+                                            <textarea class="form-control" id="delivery_address" name="delivery_address" rows="2"></textarea>
+                                            <small class="form-text text-muted">Required for delivery orders</small>
+                                        </div>
+                                        <div class="col-12">
+                                            <label for="delivery_notes" class="form-label">Delivery Notes (Optional)</label>
+                                            <textarea class="form-control" id="delivery_notes" name="delivery_notes" rows="2"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="email">Email (Optional)</label>
-                                <input type="email" class="form-control" id="email" name="email">
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="address">Address (Optional)</label>
-                                <input type="text" class="form-control" id="address" name="address">
-                            </div>
-                        </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Place Order</button>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="product">Product</label>
-                                <select class="form-control" id="product" name="product" required>
-                                    <option value="">Select a product</option>
-                                    {% for product in products %}
-                                    <option value="{{ product.id }}" data-stock="{{ product.current_stock }}">
-                                        {{ product.name }} (Stock: {{ product.current_stock }})
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="qty">Quantity</label>
-                                <input type="number" class="form-control" id="qty" name="qty" min="1" required>
-                                <small class="form-text text-muted">Available stock: <span id="availableStock">0</span></small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="delivery_type">Delivery Type</label>
-                                <select class="form-control" id="delivery_type" name="delivery_type" required>
-                                    <option value="pickup">Pickup</option>
-                                    <option value="delivery">Delivery</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="delivery_address">Delivery Address (Required for delivery)</label>
-                                <textarea class="form-control" id="delivery_address" name="delivery_address" rows="2"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="form-group">
-                                <label for="delivery_notes">Delivery Notes (Optional)</label>
-                                <textarea class="form-control" id="delivery_notes" name="delivery_notes" rows="2"></textarea>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="submitOrder">Place Order</button>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Update Status Modal -->
 <div class="modal fade" id="updateStatusModal" tabindex="-1" aria-labelledby="updateStatusModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="updateStatusModalLabel">Update Order Status</h5>
@@ -197,9 +301,9 @@
             <form id="updateStatusForm" method="POST">
                 {% csrf_token %}
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label for="status">Status</label>
-                        <select class="form-control" id="status" name="status" required>
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required>
                             <option value="pending">Pending</option>
                             <option value="processing">Processing</option>
                             <option value="completed">Completed</option>
@@ -208,7 +312,7 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-primary">Update Status</button>
                 </div>
             </form>
@@ -216,106 +320,60 @@
     </div>
 </div>
 
-<!-- Delete Order Modal -->
-<div class="modal fade" id="deleteOrderModal" tabindex="-1" aria-labelledby="deleteOrderModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="deleteOrderModalLabel">Delete Order</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to delete this order?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form id="deleteOrderForm" method="POST" style="display: inline;">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">Delete</button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_js %}
 <script>
-    // Phone number formatting
-    document.getElementById('phone').addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.startsWith('255')) {
-            value = '0' + value.substring(3);
+function addOrderItem() {
+    const orderItems = document.getElementById('orderItems');
+    const itemCount = orderItems.children.length;
+    const newItem = document.createElement('div');
+    newItem.className = 'row g-3 mb-3 order-item';
+    newItem.innerHTML = `
+        <div class="col-12 col-md-6">
+            <label class="form-label">Product</label>
+            <select class="form-select product-select" name="items[${itemCount}][product_id]" required>
+                <option value="">Select a product</option>
+                {% for product in products %}
+                <option value="{{ product.id }}" data-stock="{{ product.current_stock }}">
+                    {{ product.name }} (Stock: {{ product.current_stock }})
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Quantity</label>
+            <input type="number" class="form-control quantity-input" name="items[${itemCount}][quantity]" min="1" required>
+            <small class="form-text text-muted">Available stock: <span class="available-stock">0</span></small>
+        </div>
+    `;
+    orderItems.appendChild(newItem);
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle product selection and stock display
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('product-select')) {
+            const selectedOption = e.target.options[e.target.selectedIndex];
+            const stock = selectedOption.dataset.stock;
+            const stockSpan = e.target.closest('.order-item').querySelector('.available-stock');
+            stockSpan.textContent = stock;
         }
-        if (!value.startsWith('0') && value.length > 0) {
-            value = '0' + value;
-        }
-        e.target.value = value;
     });
 
-    // Stock validation
-    document.getElementById('product').addEventListener('change', function(e) {
-        const selectedOption = e.target.options[e.target.selectedIndex];
-        const stock = selectedOption.dataset.stock || 0;
-        document.getElementById('availableStock').textContent = stock;
-        document.getElementById('qty').max = stock;
-    });
-
-    document.getElementById('qty').addEventListener('input', function(e) {
-        const max = parseInt(e.target.max);
-        const value = parseInt(e.target.value);
-        if (value > max) {
-            e.target.value = max;
-        }
-    });
-
-    // Delivery address validation
-    document.getElementById('delivery_type').addEventListener('change', function(e) {
-        const deliveryAddress = document.getElementById('delivery_address');
-        if (e.target.value === 'delivery') {
-            deliveryAddress.required = true;
+    // Handle delivery type change
+    const deliveryType = document.getElementById('delivery_type');
+    const deliveryAddress = document.getElementById('delivery_address');
+    
+    deliveryType.addEventListener('change', function() {
+        if (this.value === 'delivery') {
+            deliveryAddress.setAttribute('required', 'required');
         } else {
-            deliveryAddress.required = false;
+            deliveryAddress.removeAttribute('required');
         }
     });
+});
 
-    // Form validation and submission
-    document.getElementById('addOrderForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const phone = document.getElementById('phone').value;
-        if (phone.length !== 10) {
-            alert('Please enter a valid 10-digit phone number');
-            return false;
-        }
-
-        const deliveryType = document.getElementById('delivery_type').value;
-        const deliveryAddress = document.getElementById('delivery_address').value;
-        if (deliveryType === 'delivery' && !deliveryAddress.trim()) {
-            alert('Delivery address is required for delivery orders');
-            return false;
-        }
-
-        // If validation passes, submit the form
-        this.submit();
-    });
-
-    function updateOrderStatus(orderId) {
-        const form = document.getElementById('updateStatusForm');
-        form.action = `/orders/${orderId}/update-status/`;
-        const modal = new bootstrap.Modal(document.getElementById('updateStatusModal'));
-        modal.show();
-    }
-
-    function deleteOrder(orderId) {
-        const form = document.getElementById('deleteOrderForm');
-        form.action = `/orders/${orderId}/delete/`;
-        const modal = new bootstrap.Modal(document.getElementById('deleteOrderModal'));
-        modal.show();
-    }
-
-    function viewOrder(orderId) {
-        window.location.href = `/orders/${orderId}/`;
-    }
+function exportOrders() {
+    // Implement export functionality
+    alert('Export functionality will be implemented soon.');
+}
 </script>
 {% endblock %} 
