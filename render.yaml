@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
+    startCommand: python manage.py migrate && python manage.py collectstatic --noinput && gunicorn app:app --bind 0.0.0.0:$PORT
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
