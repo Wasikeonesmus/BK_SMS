@@ -32,8 +32,15 @@
                                  data-price="{{ product.price }}"
                                  data-stock="{{ product.current_stock }}">
                                 <div class="position-relative">
-                                    <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}"
-                                         style="height: 100px; object-fit: cover;">
+                                    {% if product.image %}
+                                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}"
+                                             style="height: 100px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="card-img-top d-flex align-items-center justify-content-center bg-light" 
+                                             style="height: 100px;">
+                                            <i class="fas fa-image text-muted" style="font-size: 2rem;"></i>
+                                        </div>
+                                    {% endif %}
                                     {% if product.current_stock <= product.reorder_point %}
                                     <span class="position-absolute top-0 end-0 badge bg-danger m-2">Low Stock</span>
                                     {% endif %}
