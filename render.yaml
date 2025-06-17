@@ -4,11 +4,13 @@ services:
     env: python
     plan: free
     buildCommand: |
+      echo "Forcing pip installation and avoiding Poetry..."
       export POETRY_VIRTUALENVS_CREATE=false
       export POETRY_NO_INTERACTION=1
       export PIP_NO_CACHE_DIR=1
       export PIP_DISABLE_PIP_VERSION_CHECK=1
-      pip install -r requirements.txt
+      export POETRY_DISABLE=1
+      pip install --no-cache-dir -r requirements.txt
     startCommand: |
       python manage.py migrate
       gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
@@ -22,6 +24,8 @@ services:
       - key: PIP_NO_CACHE_DIR
         value: 1
       - key: PIP_DISABLE_PIP_VERSION_CHECK
+        value: 1
+      - key: POETRY_DISABLE
         value: 1
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
@@ -39,11 +43,6 @@ services:
       - libjpeg-dev
       - libpng-dev
       - libfreetype6-dev
-      - liblcms2-dev
-      - libwebp-dev
-      - libtiff5-dev
-      - libopenjp2-7-dev
-      - libzbar0
       - zlib1g-dev
       - libjpeg62-turbo-dev
 
