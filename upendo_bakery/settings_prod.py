@@ -43,8 +43,14 @@ INSTALLED_APPS = [
     'crispy_forms',
     'crispy_bootstrap5',
     'whitenoise.runserver_nostatic',
-    'storages',
 ]
+
+# Add storages if available
+try:
+    import storages
+    INSTALLED_APPS.append('storages')
+except ImportError:
+    pass
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
