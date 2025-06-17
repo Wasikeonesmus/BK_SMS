@@ -9,6 +9,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 # Set the Django settings module
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'upendo_bakery.settings_prod')
 
+# Debug: Print environment variables
+print(f"DATABASE_URL: {os.getenv('DATABASE_URL', 'NOT SET')}")
+print(f"DJANGO_SETTINGS_MODULE: {os.getenv('DJANGO_SETTINGS_MODULE')}")
+
 # Initialize Django
 django.setup()
 
