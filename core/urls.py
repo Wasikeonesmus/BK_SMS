@@ -12,6 +12,7 @@ urlpatterns = [
     path('pos/process-payment/', views.process_payment, name='process_payment'),
     path('inventory/', views.inventory, name='inventory'),
     path('add_product/', views.add_product, name='add_product'),
+    path('add_category/', views.add_category, name='add_category'),
     path('add_ingredient/', views.add_ingredient, name='add_ingredient'),
     path('edit_ingredient/<int:ingredient_id>/', views.edit_ingredient, name='edit_ingredient'),
     path('delete_ingredient/<int:ingredient_id>/', views.delete_ingredient, name='delete_ingredient'),

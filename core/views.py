@@ -1167,6 +1167,36 @@ def add_product(request):
     return render(request, 'add_product.html', {'categories': categories})
 
 @login_required
+def add_category(request):
+    if request.method == 'POST':
+        try:
+            name = request.POST.get('name')
+            description = request.POST.get('description', '')
+            
+            if not name:
+                messages.error(request, 'Category name is required')
+                return redirect('add_category')
+            
+            # Check if category already exists
+            if Category.objects.filter(name__iexact=name).exists():
+                messages.error(request, f'Category "{name}" already exists')
+                return redirect('add_category')
+            
+            # Create the category
+            category = Category.objects.create(
+                name=name,
+                description=description
+            )
+            
+            messages.success(request, f'Category "{name}" created successfully!')
+            return redirect('inventory')
+        except Exception as e:
+            messages.error(request, f'Error creating category: {str(e)}')
+            return redirect('add_category')
+    
+    return render(request, 'add_category.html')
+
+@login_required
 @csrf_exempt
 def process_payment(request):
     if request.method == 'POST':
