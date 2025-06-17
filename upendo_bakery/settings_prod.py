@@ -4,11 +4,20 @@ Production settings for upendo_bakery project on Render.
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv
-import dj_database_url
 
-# Load environment variables
-load_dotenv()
+# Try to load dotenv if available
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # If dotenv is not available, continue without it
+    pass
+
+try:
+    import dj_database_url
+except ImportError:
+    # If dj_database_url is not available, we'll handle it later
+    dj_database_url = None
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -70,7 +79,7 @@ WSGI_APPLICATION = 'upendo_bakery.wsgi.application'
 
 # Database
 DATABASE_URL = os.getenv('DATABASE_URL')
-if DATABASE_URL:
+if DATABASE_URL and dj_database_url:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
