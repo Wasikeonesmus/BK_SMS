@@ -30,6 +30,21 @@ def run_setup_commands():
         print("Continuing without migrations...")
     
     try:
+        print("Creating default categories...")
+        result = subprocess.run([sys.executable, 'manage.py', 'create_default_categories'], 
+                              capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            print("Default categories created successfully")
+        else:
+            print(f"Category creation failed: {result.stderr}")
+            print("Continuing without category creation...")
+    except subprocess.TimeoutExpired:
+        print("Category creation timed out, continuing...")
+    except Exception as e:
+        print(f"Error creating categories: {e}")
+        print("Continuing without category creation...")
+    
+    try:
         print("Collecting static files...")
         result = subprocess.run([sys.executable, 'manage.py', 'collectstatic', '--noinput'], 
                               capture_output=True, text=True, timeout=60)
