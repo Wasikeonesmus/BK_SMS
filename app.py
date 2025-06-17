@@ -30,6 +30,19 @@ def run_setup_commands():
         print("Continuing without migrations...")
     
     try:
+        print("Creating default admin user...")
+        result = subprocess.run([sys.executable, 'manage.py', 'create_default_admin'], 
+                              capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            print("Default admin user created successfully")
+        else:
+            print(f"Admin user creation failed: {result.stderr}")
+    except subprocess.TimeoutExpired:
+        print("Admin user creation timed out")
+    except Exception as e:
+        print(f"Error creating admin user: {e}")
+    
+    try:
         print("Creating default categories...")
         result = subprocess.run([sys.executable, 'manage.py', 'create_default_categories'], 
                               capture_output=True, text=True, timeout=30)
@@ -37,12 +50,10 @@ def run_setup_commands():
             print("Default categories created successfully")
         else:
             print(f"Category creation failed: {result.stderr}")
-            print("Continuing without category creation...")
     except subprocess.TimeoutExpired:
-        print("Category creation timed out, continuing...")
+        print("Category creation timed out")
     except Exception as e:
         print(f"Error creating categories: {e}")
-        print("Continuing without category creation...")
     
     try:
         print("Collecting static files...")
@@ -52,18 +63,13 @@ def run_setup_commands():
             print("Static files collected successfully")
         else:
             print(f"Static collection failed: {result.stderr}")
-            print("Continuing without static collection...")
     except subprocess.TimeoutExpired:
-        print("Static collection timed out, continuing...")
+        print("Static collection timed out")
     except Exception as e:
         print(f"Error collecting static files: {e}")
-        print("Continuing without static collection...")
 
 # Run setup commands
 run_setup_commands()
 
 # Import the WSGI application
-from upendo_bakery.wsgi import application
-
-# Export the application for gunicorn
-app = application 
+from upendo_bakery.wsgi import application as app 

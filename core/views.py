@@ -27,13 +27,22 @@ def login_view(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         password = request.POST.get('password')
-        user = authenticate(request, username=username, password=password)
         
-        if user is not None:
-            login(request, user)
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid username or password.')
+        # Check if user exists first
+        try:
+            user = User.objects.get(username=username)
+            user = authenticate(request, username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                messages.success(request, f'Welcome back, {user.username}!')
+                return redirect('dashboard')
+            else:
+                messages.error(request, 'Invalid password. Please check your password and try again.')
+        except User.DoesNotExist:
+            messages.error(request, f'User "{username}" does not exist. Please check your username or register a new account.')
+        except Exception as e:
+            messages.error(request, f'Login error: {str(e)}. Please try again.')
     
     return render(request, 'registration/login.html')
 

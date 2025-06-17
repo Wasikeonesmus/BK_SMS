@@ -9,10 +9,46 @@ User = get_user_model()
 class CustomUserCreationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     role = forms.ChoiceField(choices=User.ROLES)
+    
+    # Override password fields to add better help text
+    password1 = forms.CharField(
+        label='Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text='Your password must contain at least 8 characters and cannot be too common.'
+    )
+    password2 = forms.CharField(
+        label='Confirm Password',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+        help_text='Enter the same password as before, for verification.'
+    )
 
     class Meta:
         model = User
         fields = ('username', 'email', 'role', 'password1', 'password2')
+        widgets = {
+            'username': forms.TextInput(attrs={'class': 'form-control'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control'}),
+            'role': forms.Select(attrs={'class': 'form-select'}),
+        }
+
+    def clean_username(self):
+        username = self.cleaned_data.get('username')
+        if User.objects.filter(username=username).exists():
+            raise forms.ValidationError('This username is already taken. Please choose a different one.')
+        return username
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise forms.ValidationError('This email address is already registered. Please use a different email or try logging in.')
+        return email
+
+    def clean_password2(self):
+        password1 = self.cleaned_data.get("password1")
+        password2 = self.cleaned_data.get("password2")
+        if password1 and password2 and password1 != password2:
+            raise forms.ValidationError("Passwords don't match. Please make sure both passwords are the same.")
+        return password2
 
     def save(self, commit=True):
         user = super().save(commit=False)
