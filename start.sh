@@ -1,14 +1,17 @@
 #!/bin/bash
 set -e
 
-echo "Setting Django settings module..."
+# Set Django settings
 export DJANGO_SETTINGS_MODULE=upendo_bakery.settings_prod
 
-echo "Running database migrations..."
+# Run migrations
+echo "Running migrations..."
 python manage.py migrate
 
+# Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-echo "Starting Django application..."
-gunicorn app:app --bind 0.0.0.0:$PORT 
+# Start gunicorn
+echo "Starting gunicorn..."
+exec gunicorn app:app --bind 0.0.0.0:$PORT 
