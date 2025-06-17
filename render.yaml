@@ -3,14 +3,9 @@ services:
     name: upendo-bakery
     env: python
     plan: free
-    buildCommand: |
-      echo "Installing all packages..."
-      pip install --no-cache-dir -r requirements.txt
-      chmod +x start.sh
-    startCommand: ./start.sh
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py migrate && gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.18
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
       - key: DEBUG
@@ -23,12 +18,6 @@ services:
         fromDatabase:
           name: upendo-bakery-db
           property: connectionString
-    packages:
-      - libjpeg-dev
-      - libpng-dev
-      - libfreetype6-dev
-      - zlib1g-dev
-      - libjpeg62-turbo-dev
 
 databases:
   - name: upendo-bakery-db

@@ -1,1 +1,1 @@
-web: python manage.py migrate && gunicorn upendo_bakery.wsgi:application --config gunicorn_config.py 
+web: python manage.py migrate && gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT 
