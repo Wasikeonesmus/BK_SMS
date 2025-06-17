@@ -2,38 +2,39 @@ services:
   - type: web
     name: upendo-bakery
     env: python
+    plan: free
     buildCommand: |
-      echo "Disabling Poetry and using custom build script..."
+      export POETRY_VIRTUALENVS_CREATE=false
+      export POETRY_NO_INTERACTION=1
       export PIP_NO_CACHE_DIR=1
       export PIP_DISABLE_PIP_VERSION_CHECK=1
-      chmod +x build.sh
-      ./build.sh
-    startCommand: gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
+      pip install -r requirements.txt
+    startCommand: |
+      python manage.py migrate
+      gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.7
+        value: 3.13.4
+      - key: POETRY_VIRTUALENVS_CREATE
+        value: false
+      - key: POETRY_NO_INTERACTION
+        value: 1
+      - key: PIP_NO_CACHE_DIR
+        value: 1
+      - key: PIP_DISABLE_PIP_VERSION_CHECK
+        value: 1
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
+      - key: DEBUG
+        value: False
       - key: SECRET_KEY
         generateValue: true
-      - key: DEBUG
-        value: false
       - key: ALLOWED_HOSTS
-        value: .onrender.com
+        value: upendo-bakery.onrender.com
       - key: DATABASE_URL
         fromDatabase:
           name: upendo-bakery-db
           property: connectionString
-      - key: PYTHONPATH
-        value: /opt/render/project/src
-      - key: PIP_NO_CACHE_DIR
-        value: "1"
-      - key: PIP_DISABLE_PIP_VERSION_CHECK
-        value: "1"
-      - key: POETRY_VENV_IN_PROJECT
-        value: "0"
-      - key: POETRY_NO_INTERACTION
-        value: "1"
     packages:
       - libjpeg-dev
       - libpng-dev
@@ -45,10 +46,9 @@ services:
       - libzbar0
       - zlib1g-dev
       - libjpeg62-turbo-dev
-    plan: starter
 
 databases:
   - name: upendo-bakery-db
     databaseName: upendo_bakery
     user: upendo_bakery_user
-    plan: starter 
+    plan: free 
