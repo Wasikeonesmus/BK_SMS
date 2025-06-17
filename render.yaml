@@ -7,6 +7,8 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.7
+      - key: DJANGO_SETTINGS_MODULE
+        value: upendo_bakery.settings_prod
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
@@ -19,6 +21,10 @@ services:
           property: connectionString
       - key: PYTHONPATH
         value: /opt/render/project/src
+      - key: PIP_NO_CACHE_DIR
+        value: "1"
+      - key: PIP_DISABLE_PIP_VERSION_CHECK
+        value: "1"
     packages:
       - libjpeg-dev
       - libpng-dev
@@ -30,8 +36,10 @@ services:
       - libzbar0
       - zlib1g-dev
       - libjpeg62-turbo-dev
+    plan: starter
 
 databases:
   - name: upendo-bakery-db
     databaseName: upendo_bakery
-    user: upendo_bakery_user 
+    user: upendo_bakery_user
+    plan: starter 

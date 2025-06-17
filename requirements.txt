@@ -1,7 +1,7 @@
 Django==5.2.1
 django-phonenumber-field==7.3.0
 phonenumbers==8.13.30
-Pillow==9.5.0
+Pillow==10.0.1
 python-decouple==3.8
 requests==2.31.0
 django-crispy-forms==2.1
@@ -18,4 +18,5 @@ django-redis==5.4.0  # For caching
 sentry-sdk[django]==1.39.1  # For error monitoring
 pytest==8.0.0  # For testing
 pytest-django==4.8.0  # Django test integration
-coverage==7.4.1  # For test coverage 
+coverage==7.4.1  # For test coverage
+dj-database-url==2.1.0  # For parsing DATABASE_URL 

@@ -1,0 +1,1 @@
+web: gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT 
