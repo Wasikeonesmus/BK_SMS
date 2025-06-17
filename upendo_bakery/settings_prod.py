@@ -29,7 +29,16 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = False
 
 # Get allowed hosts from environment variable
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',') if os.getenv('ALLOWED_HOSTS') else []
+
+# Add Render domain if not already included
+RENDER_DOMAIN = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_DOMAIN and RENDER_DOMAIN not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_DOMAIN)
+
+# Add common localhost entries for development
+if not ALLOWED_HOSTS:
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
 
 # Application definition
 INSTALLED_APPS = [
