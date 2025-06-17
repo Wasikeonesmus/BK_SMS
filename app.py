@@ -16,18 +16,33 @@ django.setup()
 def run_setup_commands():
     try:
         print("Running database migrations...")
-        subprocess.run([sys.executable, 'manage.py', 'migrate'], check=True, capture_output=True, text=True)
-        print("Migrations completed successfully")
-        
-        print("Collecting static files...")
-        subprocess.run([sys.executable, 'manage.py', 'collectstatic', '--noinput'], check=True, capture_output=True, text=True)
-        print("Static files collected successfully")
-    except subprocess.CalledProcessError as e:
-        print(f"Error running setup commands: {e}")
-        print(f"stdout: {e.stdout}")
-        print(f"stderr: {e.stderr}")
+        result = subprocess.run([sys.executable, 'manage.py', 'migrate'], 
+                              capture_output=True, text=True, timeout=60)
+        if result.returncode == 0:
+            print("Migrations completed successfully")
+        else:
+            print(f"Migration failed: {result.stderr}")
+            print("Continuing without migrations...")
+    except subprocess.TimeoutExpired:
+        print("Migration timed out, continuing...")
     except Exception as e:
-        print(f"Unexpected error during setup: {e}")
+        print(f"Error running migrations: {e}")
+        print("Continuing without migrations...")
+    
+    try:
+        print("Collecting static files...")
+        result = subprocess.run([sys.executable, 'manage.py', 'collectstatic', '--noinput'], 
+                              capture_output=True, text=True, timeout=60)
+        if result.returncode == 0:
+            print("Static files collected successfully")
+        else:
+            print(f"Static collection failed: {result.stderr}")
+            print("Continuing without static collection...")
+    except subprocess.TimeoutExpired:
+        print("Static collection timed out, continuing...")
+    except Exception as e:
+        print(f"Error collecting static files: {e}")
+        print("Continuing without static collection...")
 
 # Run setup commands
 run_setup_commands()
