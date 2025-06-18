@@ -98,14 +98,21 @@ if DATABASE_URL and dj_database_url:
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL)
     }
+    print(f"Using PostgreSQL database from DATABASE_URL")
 else:
-    # Fallback to SQLite if no DATABASE_URL is provided
+    # On Render, we should always have a DATABASE_URL
+    # If not, this might be a configuration issue
+    print("WARNING: No DATABASE_URL found. This might cause data loss on Render.")
+    print("Please set up a PostgreSQL database on Render and configure DATABASE_URL.")
+    
+    # Fallback to SQLite if no DATABASE_URL is provided (for local development only)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
+    print("Falling back to SQLite database (data will not persist on Render)")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

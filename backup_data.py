@@ -189,4 +189,4 @@ if __name__ == '__main__':
         if not args.file:
             print("Please specify backup file with --file")
             sys.exit(1)
-        restore_data(args.file) 
+        restore_data(args.file)

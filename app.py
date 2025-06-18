@@ -69,6 +69,20 @@ def run_setup_commands():
         print(f"Error creating categories: {e}")
     
     try:
+        print("Checking database setup...")
+        result = subprocess.run([sys.executable, 'manage.py', 'setup_render_database'], 
+                              capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            print("Database setup check completed")
+            print(result.stdout)
+        else:
+            print(f"Database setup check failed: {result.stderr}")
+    except subprocess.TimeoutExpired:
+        print("Database setup check timed out")
+    except Exception as e:
+        print(f"Error checking database setup: {e}")
+    
+    try:
         print("Collecting static files...")
         result = subprocess.run([sys.executable, 'manage.py', 'collectstatic', '--noinput'], 
                               capture_output=True, text=True, timeout=60)
