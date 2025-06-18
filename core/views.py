@@ -1641,41 +1641,26 @@ def export_orders(request):
 
 def health_check(request):
     """
-    Health check endpoint for monitoring database connectivity and application status.
+    Health check endpoint that verifies database connectivity.
     """
-    health_status = {
-        'status': 'healthy',
-        'database': 'unknown',
-        'environment': os.getenv('ENVIRONMENT', 'development'),
-        'render_hostname': os.getenv('RENDER_EXTERNAL_HOSTNAME'),
-        'database_url_configured': bool(os.getenv('DATABASE_URL')),
-        'timestamp': timezone.now().isoformat(),
-    }
-    
-    # Check database connection
     try:
+        # Try to connect to the database
         with connection.cursor() as cursor:
             cursor.execute("SELECT 1")
-            health_status['database'] = 'connected'
-            
-            # Get database info
-            cursor.execute("SELECT version()")
-            version = cursor.fetchone()[0]
-            health_status['database_version'] = version
-            
+            cursor.fetchone()
+        
+        # Check if we can query our models
+        User.objects.first()
+        
+        return JsonResponse({
+            "status": "healthy",
+            "database": "connected",
+            "timestamp": timezone.now().isoformat()
+        })
     except Exception as e:
-        health_status['database'] = 'error'
-        health_status['database_error'] = str(e)
-        health_status['status'] = 'unhealthy'
-    
-    # Check if we're on Render
-    if os.getenv('RENDER_EXTERNAL_HOSTNAME'):
-        health_status['platform'] = 'render'
-        health_status['data_persistence'] = 'enabled' if os.getenv('DATABASE_URL') else 'disabled'
-    else:
-        health_status['platform'] = 'local'
-    
-    # Return appropriate HTTP status
-    status_code = 200 if health_status['status'] == 'healthy' else 503
-    
-    return JsonResponse(health_status, status=status_code)
+        logger.error(f"Health check failed: {str(e)}")
+        return JsonResponse({
+            "status": "unhealthy",
+            "error": str(e),
+            "timestamp": timezone.now().isoformat()
+        }, status=500)
