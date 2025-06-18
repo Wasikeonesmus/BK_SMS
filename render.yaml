@@ -3,8 +3,10 @@ services:
     name: BK_SMS-4
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: chmod +x start.sh && ./start.sh
+    buildCommand: |
+      pip install -r requirements.txt
+      chmod +x start.sh
+    startCommand: ./start.sh
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
