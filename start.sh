@@ -34,9 +34,8 @@ python manage.py setup_render_database
 echo "Running database migrations..."
 python manage.py migrate
 
-# Run database monitoring
-echo "Running database health check..."
-python manage.py monitor_database
+# Create default admin user
+python manage.py create_default_admin
 
 # Collect static files
 echo "Collecting static files..."
