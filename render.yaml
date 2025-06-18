@@ -4,7 +4,14 @@ services:
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py && gunicorn upendo_bakery.wsgi:application --config gunicorn_config.py
+    startCommand: >
+      python manage.py migrate &&
+      python manage.py ensure_data_persistence &&
+      python manage.py create_default_admin &&
+      python manage.py create_default_categories &&
+      python manage.py setup_render_database &&
+      python manage.py collectstatic --noinput &&
+      gunicorn upendo_bakery.wsgi:application --config gunicorn_config.py
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
