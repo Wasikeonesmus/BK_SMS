@@ -1,17 +1,15 @@
 services:
   - type: web
-    name: BK_SMS-4
+    name: BK_SMS-10
     env: python
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: >
       python manage.py migrate &&
-      python manage.py ensure_data_persistence &&
       python manage.py create_default_admin &&
       python manage.py create_default_categories &&
-      python manage.py setup_render_database &&
       python manage.py collectstatic --noinput &&
-      gunicorn upendo_bakery.wsgi:application --config gunicorn_config.py
+      gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
@@ -20,12 +18,12 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ALLOWED_HOSTS
-        value: bk-sms-4.onrender.com,upendo-bakery.onrender.com
+        value: bk-sms-10.onrender.com
       - key: RENDER_EXTERNAL_HOSTNAME
-        value: bk-sms-4.onrender.com
+        value: bk-sms-10.onrender.com
       - key: DATABASE_URL
         fromDatabase:
-          name: bk-sms-4-db
+          name: bk-sms-10-db
           property: connectionString
       - key: ENVIRONMENT
         value: production
@@ -35,8 +33,8 @@ services:
     autoDeploy: true
 
 databases:
-  - name: bk-sms-4-db
-    databaseName: bk_sms_4
-    user: bk_sms_4_user
+  - name: bk-sms-10-db
+    databaseName: bk_sms_10
+    user: bk_sms_10_user
     plan: free
     ipAllowList: [] 
