@@ -99,4 +99,4 @@ def run_setup_commands():
 run_setup_commands()
 
 # Import the WSGI application
-from upendo_bakery.wsgi import application as app 
+from upendo_bakery.wsgi import application 

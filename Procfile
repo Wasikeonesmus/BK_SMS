@@ -1,1 +1,1 @@
-web: gunicorn upendo_bakery.wsgi:application 
+web: python app.py && gunicorn app:application --config gunicorn_config.py 
