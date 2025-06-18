@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: >
-      python manage.py migrate &&
+      python manage.py setup_database &&
       python manage.py create_default_admin &&
       python manage.py create_default_categories &&
       python manage.py collectstatic --noinput &&
