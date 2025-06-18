@@ -37,6 +37,9 @@ python manage.py migrate
 # Create default admin user
 python manage.py create_default_admin
 
+# Create default categories
+python manage.py create_default_categories
+
 # Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
