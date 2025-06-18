@@ -63,54 +63,72 @@ def register(request):
 def dashboard(request):
     today = timezone.now().date()
     
-    # Get today's sales
-    today_sales = Sale.objects.filter(date__date=today).aggregate(
-        total=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
-    )['total'] or 0
+    # Optimize dashboard queries with select_related and prefetch_related
+    from django.db.models import Q
     
-    # Get pending orders count
-    pending_orders = Order.objects.filter(status='pending').count()
-    
-    # Get low stock items
-    low_stock_items = Product.objects.filter(current_stock__lte=F('reorder_point'))
-    low_stock_count = low_stock_items.count()
-    
-    # Get today's expenses
-    today_expenses = Expense.objects.filter(created_at__date=today).aggregate(
-        total=Sum('amount')
-    )['total'] or 0
-    
-    # Get recent sales
-    recent_sales = Sale.objects.select_related('product').order_by('-date')[:5]
-    
-    # Get pending orders list
-    pending_orders_list = Order.objects.select_related('customer', 'created_by').filter(status='pending')[:5]
-    
-    # Get total products count
-    total_products = Product.objects.count()
-    
-    context = {
-        'today_sales': today_sales,
-        'pending_orders': pending_orders,
-        'low_stock_items': low_stock_items,
-        'low_stock_count': low_stock_count,
-        'today_expenses': today_expenses,
-        'recent_sales': recent_sales,
-        'pending_orders_list': pending_orders_list,
-        'total_products': total_products,
+    # Get all dashboard data in optimized queries
+    dashboard_data = {
+        # Today's sales - single optimized query
+        'today_sales': Sale.objects.filter(
+            date__date=today
+        ).aggregate(
+            total=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
+        )['total'] or 0,
+        
+        # Pending orders count - single query
+        'pending_orders': Order.objects.filter(status='pending').count(),
+        
+        # Low stock items with category info - optimized query
+        'low_stock_items': Product.objects.select_related('category').filter(
+            current_stock__lte=F('reorder_point')
+        )[:10],  # Limit to 10 items for performance
+        
+        'low_stock_count': Product.objects.filter(
+            current_stock__lte=F('reorder_point')
+        ).count(),
+        
+        # Today's expenses - single query
+        'today_expenses': Expense.objects.filter(
+            created_at__date=today
+        ).aggregate(
+            total=Sum('amount')
+        )['total'] or 0,
+        
+        # Recent sales with product info - optimized query
+        'recent_sales': Sale.objects.select_related('product', 'product__category').order_by('-date')[:5],
+        
+        # Pending orders with related data - optimized query
+        'pending_orders_list': Order.objects.select_related(
+            'customer', 'created_by'
+        ).prefetch_related(
+            'items__product'
+        ).filter(status='pending')[:5],
+        
+        # Total products count - single query
+        'total_products': Product.objects.count(),
+        
+        # Additional performance metrics
+        'total_customers': Customer.objects.count(),
+        'total_sales_today': Sale.objects.filter(date__date=today).count(),
     }
-    return render(request, 'dashboard.html', context)
+    
+    return render(request, 'dashboard.html', dashboard_data)
 
 @login_required
 def pos(request):
-    products = Product.objects.filter(is_active=True).order_by('category__name', 'name')
+    # Optimize POS queries with select_related and prefetch_related
+    products = Product.objects.select_related('category').filter(
+        is_active=True
+    ).order_by('category__name', 'name')
+    
+    # Cache categories to avoid additional queries
     categories = Category.objects.all()
     
     # Handle adding product from inventory
     add_product_id = request.GET.get('add_product')
     if add_product_id:
         try:
-            product = Product.objects.get(id=add_product_id)
+            product = Product.objects.select_related('category').get(id=add_product_id)
             if product.is_active:
                 # Add to session cart
                 cart = request.session.get('cart', {})
@@ -130,7 +148,8 @@ def pos(request):
 
 @login_required
 def inventory(request):
-    products = Product.objects.all().order_by('category__name', 'name')
+    # Optimize inventory queries with select_related
+    products = Product.objects.select_related('category').all().order_by('category__name', 'name')
     categories = Category.objects.all()
     
     if request.method == 'POST':
@@ -138,7 +157,7 @@ def inventory(request):
         product_id = request.POST.get('product_id')
         
         try:
-            product = Product.objects.get(id=product_id)
+            product = Product.objects.select_related('category').get(id=product_id)
             
             if action == 'update_stock':
                 new_stock = int(request.POST.get('new_stock', 0))
@@ -215,13 +234,17 @@ def update_stock(request, ingredient_id):
 
 @login_required
 def sales(request):
-    sales = Sale.objects.all().order_by('-date')
+    # Optimize sales query with select_related
+    sales = Sale.objects.select_related('product', 'product__category', 'user').all().order_by('-date')
     return render(request, 'sales.html', {'sales': sales})
 
 @login_required
 def orders(request):
-    orders = Order.objects.all().order_by('-created_at')
-    products = Product.objects.all()
+    # Optimize orders query with select_related and prefetch_related
+    orders = Order.objects.select_related('customer', 'created_by').prefetch_related(
+        'items__product'
+    ).all().order_by('-created_at')
+    products = Product.objects.select_related('category').all()
     return render(request, 'orders.html', {'orders': orders, 'products': products})
 
 @login_required
@@ -422,38 +445,40 @@ def reports(request):
         start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
-        # Get sales data
-        sales = Sale.objects.filter(date__date__range=[start_date, end_date])
-        total_sales = sales.aggregate(
+        # Optimize reports queries - use select_related and prefetch_related
+        sales_base = Sale.objects.select_related('product', 'product__category').filter(
+            date__date__range=[start_date, end_date]
+        )
+        
+        # Get sales data with optimized aggregation
+        total_sales = sales_base.aggregate(
             total=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
         )['total'] or 0
         
-        # Get expenses data
+        # Get expenses data with optimized query
         expenses = Expense.objects.filter(date__range=[start_date, end_date])
         total_expenses = expenses.aggregate(total=Sum('amount'))['total'] or 0
         
         # Calculate profit
         profit = total_sales - total_expenses
         
-        # Get top selling products
-        top_products = Sale.objects.filter(
-            date__date__range=[start_date, end_date]
-        ).values(
-            'product__name'
+        # Get top selling products with optimized query
+        top_products = sales_base.values(
+            'product__name', 'product__category__name'
         ).annotate(
             total_quantity=Sum('qty'),
             total_revenue=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
         ).order_by('-total_quantity')[:5]
         
-        # Get sales by payment method
-        sales_by_payment = sales.values(
+        # Get sales by payment method with optimized query
+        sales_by_payment = sales_base.values(
             'payment_type'
         ).annotate(
             total=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
         ).order_by('-total')
 
-        # Calculate daily sales for the chart
-        daily_sales = sales.values('date__date').annotate(
+        # Calculate daily sales for the chart with optimized query
+        daily_sales = sales_base.values('date__date').annotate(
             total=Sum(ExpressionWrapper(F('price') * F('qty'), output_field=DecimalField()))
         ).order_by('date__date')
 
@@ -463,6 +488,7 @@ def reports(request):
             'values': [float(sale['total']) for sale in daily_sales]
         }
         
+        # Limit sales and expenses for template rendering to improve performance
         context = {
             'start_date': start_date,
             'end_date': end_date,
@@ -471,9 +497,9 @@ def reports(request):
             'profit': profit,
             'top_products': top_products,
             'sales_by_payment': sales_by_payment,
-            'sales': sales,
-            'expenses': expenses,
-            'sales_data': sales_data,  # Add the sales data for the chart
+            'sales': sales_base[:100],  # Limit to 100 records for performance
+            'expenses': expenses[:100],  # Limit to 100 records for performance
+            'sales_data': sales_data,
         }
         
         return render(request, 'reports.html', context)
@@ -536,7 +562,7 @@ def initiate_mpesa_payment(phone, amount):
         
         # Format phone number (remove leading 0 and add country code)
         if phone.startswith('0'):
-            phone = '254' + phone[1:]
+            phone = '254' + phone[3:]
         elif not phone.startswith('254'):
             phone = '254' + phone
         
