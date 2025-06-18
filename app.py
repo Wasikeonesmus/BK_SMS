@@ -30,6 +30,19 @@ def run_setup_commands():
         print("Continuing without migrations...")
     
     try:
+        print("Ensuring data persistence...")
+        result = subprocess.run([sys.executable, 'manage.py', 'ensure_data_persistence'], 
+                              capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            print("Data persistence ensured successfully")
+        else:
+            print(f"Data persistence failed: {result.stderr}")
+    except subprocess.TimeoutExpired:
+        print("Data persistence timed out")
+    except Exception as e:
+        print(f"Error ensuring data persistence: {e}")
+    
+    try:
         print("Creating default admin user...")
         result = subprocess.run([sys.executable, 'manage.py', 'create_default_admin'], 
                               capture_output=True, text=True, timeout=30)
