@@ -13,13 +13,13 @@ timeout = 30
 keepalive = 2
 
 # Logging
-accesslog = 'logs/gunicorn-access.log'
-errorlog = 'logs/gunicorn-error.log'
+accesslog = '-'  # Log to stdout
+errorlog = '-'   # Log to stderr
 loglevel = 'info'
 
 # Process naming
 proc_name = 'upendo_bakery'
 
-# SSL
+# SSL (only used if SSL is configured)
 keyfile = os.getenv('SSL_KEYFILE')
 certfile = os.getenv('SSL_CERTFILE') 
