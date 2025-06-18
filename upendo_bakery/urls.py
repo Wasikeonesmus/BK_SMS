@@ -47,6 +47,7 @@ urlpatterns = [
     path('delete-product/<int:product_id>/', views.delete_product, name='delete_product'),
     path('order/<int:order_id>/', views.order_details, name='order_detail'),
     path('process-payment/', views.process_payment, name='process_payment'),
+    path('health/', views.health_check, name='health_check'),
 ]
 
 # Serve media files in both development and production

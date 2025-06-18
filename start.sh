@@ -45,4 +45,4 @@ python manage.py collectstatic --noinput
 # Start gunicorn
 echo "Starting gunicorn server..."
 echo "=================================================="
-exec gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 
+exec gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120 
