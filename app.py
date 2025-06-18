@@ -99,4 +99,5 @@ def run_setup_commands():
 run_setup_commands()
 
 # Import the WSGI application
-from upendo_bakery.wsgi import application 
+from upendo_bakery.wsgi import application
+app = application  # Expose the application as 'app' for gunicorn 
