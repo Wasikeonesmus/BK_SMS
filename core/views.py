@@ -120,7 +120,7 @@ def dashboard(request):
 def pos(request):
     # Optimize POS queries with select_related and prefetch_related
     products = Product.objects.select_related('category').filter(
-        is_active=True
+        is_active=True, is_in_inventory=True
     ).order_by('category__name', 'name')
     
     # Cache categories to avoid additional queries
@@ -150,7 +150,7 @@ def pos(request):
 
 @login_required
 def inventory(request):
-    # Optimize inventory queries with select_related
+    # Show all products in inventory management
     products = Product.objects.select_related('category').all().order_by('category__name', 'name')
     categories = Category.objects.all()
     
@@ -169,11 +169,17 @@ def inventory(request):
                     messages.success(request, f'Stock updated for {product.name}')
                 else:
                     messages.error(request, 'Stock cannot be negative')
-                    
+            
             elif action == 'toggle_active':
                 product.is_active = not product.is_active
                 product.save()
                 status = 'activated' if product.is_active else 'deactivated'
+                messages.success(request, f'{product.name} has been {status}')
+            
+            elif action == 'toggle_inventory_status':
+                product.is_in_inventory = not product.is_in_inventory
+                product.save()
+                status = 'added to POS' if product.is_in_inventory else 'removed from POS'
                 messages.success(request, f'{product.name} has been {status}')
                 
         except Product.DoesNotExist:
@@ -1162,6 +1168,8 @@ def add_product(request):
             current_stock = int(request.POST.get('current_stock', 0))
             reorder_point = int(request.POST.get('reorder_point', 10))
             image = request.FILES.get('image')
+            # Always set is_in_inventory to False when adding a new product
+            is_in_inventory = False
 
             # Validate stock and reorder point
             if current_stock < 0:
@@ -1182,7 +1190,8 @@ def add_product(request):
                 sku=sku,
                 current_stock=current_stock,
                 reorder_point=reorder_point,
-                image=image
+                image=image,
+                is_in_inventory=is_in_inventory
             )
 
             # Create initial stock history record
@@ -1489,6 +1498,7 @@ def edit_product(request, product_id):
             product.price = request.POST.get('price')
             product.reorder_point = request.POST.get('reorder_point')
             product.current_stock = request.POST.get('current_stock')
+            product.is_in_inventory = request.POST.get('is_in_inventory', 'on') == 'on'
             
             # Handle image upload
             if 'image' in request.FILES:
@@ -1667,7 +1677,7 @@ def health_check(request):
         }, status=500)
 
 class AddSaleForm(forms.Form):
-    product = forms.ModelChoiceField(queryset=Product.objects.filter(is_active=True), label='Product')
+    product = forms.ModelChoiceField(queryset=Product.objects.filter(is_active=True, is_in_inventory=True), label='Product')
     qty = forms.IntegerField(min_value=1, label='Quantity')
     payment_type = forms.ChoiceField(choices=Sale.PAYMENT_TYPES, label='Payment Type')
 
@@ -1697,3 +1707,8 @@ def add_sale(request):
     else:
         form = AddSaleForm()
     return render(request, 'add_sale.html', {'form': form})
+
+@login_required
+def products(request):
+    products = Product.objects.select_related('category').all().order_by('category__name', 'name')
+    return render(request, 'products.html', {'products': products})

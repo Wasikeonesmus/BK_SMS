@@ -78,7 +78,7 @@
             <!-- Desktop View -->
             <div class="table-responsive d-none d-md-block">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
+                    <thead class="bg-primary text-white">
                         <tr>
                             <th>Image</th>
                             <th>Name</th>
@@ -132,9 +132,16 @@
                                             data-bs-target="#deleteModal{{ product.id }}" title="Delete">
                                         <i class="fas fa-trash"></i>
                                     </button>
-                                    <a href="{% url 'pos' %}?add_product={{ product.id }}" class="btn btn-sm btn-success" title="Add to POS">
-                                        <i class="fas fa-cart-plus"></i>
-                                    </a>
+                                    <form method="post" style="display:inline;">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="toggle_inventory_status">
+                                        <input type="hidden" name="product_id" value="{{ product.id }}">
+                                        {% if product.is_in_inventory %}
+                                            <button type="submit" class="btn btn-warning btn-sm">Remove from POS</button>
+                                        {% else %}
+                                            <button type="submit" class="btn btn-success btn-sm">Add to POS</button>
+                                        {% endif %}
+                                    </form>
                                 </div>
                             </td>
                         </tr>
@@ -188,9 +195,16 @@
                                                         data-bs-target="#deleteModal{{ product.id }}" title="Delete">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
-                                                <a href="{% url 'pos' %}?add_product={{ product.id }}" class="btn btn-sm btn-success" title="Add to POS">
-                                                    <i class="fas fa-cart-plus"></i>
-                                                </a>
+                                                <form method="post" style="display:inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="toggle_inventory_status">
+                                                    <input type="hidden" name="product_id" value="{{ product.id }}">
+                                                    {% if product.is_in_inventory %}
+                                                        <button type="submit" class="btn btn-warning btn-sm">Remove from POS</button>
+                                                    {% else %}
+                                                        <button type="submit" class="btn btn-success btn-sm">Add to POS</button>
+                                                    {% endif %}
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
