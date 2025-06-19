@@ -21,6 +21,7 @@ from django.db import transaction
 from django.http import HttpResponse
 from django.conf import settings
 from django.db import connection
+from django import forms
 
 logger = logging.getLogger(__name__)
 
@@ -1664,3 +1665,35 @@ def health_check(request):
             "error": str(e),
             "timestamp": timezone.now().isoformat()
         }, status=500)
+
+class AddSaleForm(forms.Form):
+    product = forms.ModelChoiceField(queryset=Product.objects.filter(is_active=True), label='Product')
+    qty = forms.IntegerField(min_value=1, label='Quantity')
+    payment_type = forms.ChoiceField(choices=Sale.PAYMENT_TYPES, label='Payment Type')
+
+@login_required
+def add_sale(request):
+    if request.method == 'POST':
+        form = AddSaleForm(request.POST)
+        if form.is_valid():
+            product = form.cleaned_data['product']
+            qty = form.cleaned_data['qty']
+            payment_type = form.cleaned_data['payment_type']
+            user = request.user
+            if product.current_stock < qty:
+                messages.error(request, f'Not enough stock for {product.name}. Available: {product.current_stock}')
+            else:
+                Sale.objects.create(
+                    product=product,
+                    qty=qty,
+                    price=product.price,
+                    payment_type=payment_type,
+                    user=user
+                )
+                product.current_stock -= qty
+                product.save()
+                messages.success(request, 'Sale added successfully!')
+                return redirect('sales')
+    else:
+        form = AddSaleForm()
+    return render(request, 'add_sale.html', {'form': form})
