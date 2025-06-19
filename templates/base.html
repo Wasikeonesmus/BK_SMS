@@ -20,12 +20,22 @@
     <style>
         :root {
             --sidebar-width: 250px;
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --accent-color: #28a745;
+            --primary-color: #b8860b;      /* Goldenrod for accents */
+            --secondary-color: #ffe082;    /* Light honey yellow */
+            --accent-color: #ffb300;       /* Amber accent */
+            --background-color: #fff8e1;   /* Golden honey background */
+            --text-color: #6d4c1b;         /* Rich brown for text */
         }
-        
+        body.night-mode {
+            --background-color: #3e2723;   /* Chocolate brown */
+            --text-color: #f5e9da;         /* Warm light beige */
+            --primary-color: #795548;      /* Medium brown */
+            --secondary-color: #a1887f;    /* Light brown/gray */
+            --accent-color: #ffb300;       /* Amber accent */
+        }
         body {
+            background: var(--background-color);
+            color: var(--text-color);
             font-size: 14px;
             overflow-x: hidden;
             -webkit-text-size-adjust: 100%;
@@ -219,6 +229,11 @@
     {% block extra_css %}{% endblock %}
 </head>
 <body>
+    <!-- Theme Toggle Button -->
+    <button id="themeToggle" class="btn btn-outline-secondary" style="position:fixed;top:10px;right:10px;z-index:2000;">
+      <i id="themeIcon" class="fas fa-moon"></i> Toggle Theme
+    </button>
+
     <!-- Mobile Navbar Toggle -->
     <button class="btn btn-dark d-md-none position-fixed" style="top: 10px; left: 10px; z-index: 1001;" id="sidebarToggle">
         <i class="fas fa-bars"></i>
@@ -324,6 +339,31 @@
                 document.querySelector('.sidebar').classList.remove('show');
             }
         });
+
+        // Theme toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        if (themeToggle) {
+          themeToggle.addEventListener('click', function() {
+            document.body.classList.toggle('night-mode');
+            // Save preference
+            if (document.body.classList.contains('night-mode')) {
+              localStorage.setItem('theme', 'night');
+              themeIcon.classList.remove('fa-moon');
+              themeIcon.classList.add('fa-sun');
+            } else {
+              localStorage.setItem('theme', 'day');
+              themeIcon.classList.remove('fa-sun');
+              themeIcon.classList.add('fa-moon');
+            }
+          });
+          // On load, set theme from localStorage
+          if (localStorage.getItem('theme') === 'night') {
+            document.body.classList.add('night-mode');
+            themeIcon.classList.remove('fa-moon');
+            themeIcon.classList.add('fa-sun');
+          }
+        }
     </script>
     {% block extra_js %}{% endblock %}
 </body>
