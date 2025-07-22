@@ -1,1 +1,1 @@
-web: gunicorn upendo_bakery.wsgi:application --config gunicorn_config.py --chdir upendo_bakery 
+web: cd upendo_bakery && gunicorn upendo_bakery.wsgi:application --config ../gunicorn_config.py --bind 0.0.0.0:$PORT --workers 3 --timeout 120 
