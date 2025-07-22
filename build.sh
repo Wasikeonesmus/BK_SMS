@@ -13,6 +13,13 @@ echo "Current directory: $(pwd)"
 echo "Python version: $(python --version)"
 echo "Pip version: $(pip --version)"
 
+# Verify Django is installed
+echo "🔍 Checking Django installation..."
+python -c "import django; print(f'Django version: {django.__version__}')"
+
+# Set default port if not specified
+export PORT=${PORT:-10000}
+
 echo "🚀 Starting Upendo Bakery deployment build..."
 
 # Print environment variables for debugging

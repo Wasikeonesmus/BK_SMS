@@ -1,10 +1,26 @@
 #!/bin/bash
 set -e  # Exit on error
 
+# Print environment info for debugging
 echo "🔍 Render build script starting..."
 echo "📂 Current directory: $(pwd)"
-echo "📋 Directory contents:"
-ls -la
+echo "🐍 Python version: $(python --version)"
+echo "📦 Pip version: $(pip --version)"
+
+# Install system dependencies if needed
+# echo "🔄 Installing system dependencies..."
+# apt-get update && apt-get install -y --no-install-recommends \
+#     gcc \
+#     python3-dev \
+#     libpq-dev
+
+# Upgrade pip and install Python dependencies
+echo "📦 Installing Python dependencies..."
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+
+# Install any development dependencies if needed
+# pip install -r requirements-dev.txt
 
 # Make build.sh executable if it exists
 if [ -f "build.sh" ]; then
