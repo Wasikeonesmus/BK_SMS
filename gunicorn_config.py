@@ -12,6 +12,12 @@ worker_connections = 1000
 timeout = 30
 keepalive = 2
 
+# Set the working directory to the project root
+chdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Explicitly set the WSGI application
+wsgi_app = 'upendo_bakery.wsgi:application'
+
 # Logging
 accesslog = '-'  # Log to stdout
 errorlog = '-'   # Log to stderr
