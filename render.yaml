@@ -10,11 +10,26 @@ services:
     # Build command will be handled by build.sh
     buildCommand: |
       echo "🚀 Starting build process..."
-      chmod +x build.sh
-      ./build.sh
+      if [ -f "build.sh" ]; then
+        echo "✅ Found build.sh, making it executable..."
+        chmod +x build.sh
+        ./build.sh
+      else
+        echo "❌ Error: build.sh not found!"
+        echo "📂 Current directory contents:"
+        ls -la
+        exit 1
+      fi
     
     # Start command is handled by build.sh
-    startCommand: ""
+    startCommand: |
+      if [ -f "build.sh" ]; then
+        echo "🚀 Starting application using build.sh..."
+        ./build.sh
+      else
+        echo "❌ Error: build.sh not found for start command!"
+        exit 1
+      fi
     
     # Environment variables
     envVars:

@@ -1,11 +1,17 @@
 #!/bin/bash
+set -e  # Exit on error
 
-# Exit on any error
-set -e
+# Ensure we're in the right directory
+cd "$(dirname "$0")"
 
-# Enable debug output
-set -x
+# Set environment variables for the build process
 export DJANGO_SETTINGS_MODULE=upendo_bakery.settings_prod
+
+# Debug information
+echo "=== Build Script Debug Info ==="
+echo "Current directory: $(pwd)"
+echo "Python version: $(python --version)"
+echo "Pip version: $(pip --version)"
 
 echo "🚀 Starting Upendo Bakery deployment build..."
 
