@@ -60,18 +60,30 @@ services:
       echo "<html><body><h1>Health Check</h1><p>OK</p></body></html>" > staticfiles/health/index.html
     
     startCommand: |
+      # Set PYTHONPATH to include the current directory
+      export PYTHONPATH="$PYTHONPATH:$(pwd)"
       echo "🚀 Starting application..."
-      echo "Using DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"
-      echo "Using PORT: $PORT"
-      echo "Using DATABASE_URL: $DATABASE_URL"
-      cd $HOME/repo && \
-      poetry run gunicorn upendo_bakery.wsgi:application \
+      echo "Current directory: $(pwd)"
+      echo "Python path: $PYTHONPATH"
+      echo "DJANGO_SETTINGS_MODULE: $DJANGO_SETTINGS_MODULE"
+      echo "PORT: $PORT"
+      echo "DATABASE_URL: $DATABASE_URL"
+      
+      # Change to the project root directory
+      cd $(pwd)
+      
+      # Run migrations
+      python manage.py migrate --noinput
+      
+      # Start Gunicorn with explicit path to WSGI application
+      python -m gunicorn upendo_bakery.wsgi:application \
         --bind 0.0.0.0:$PORT \
         --workers 3 \
         --timeout 120 \
         --log-level=debug \
         --access-logfile - \
-        --error-logfile -
+        --error-logfile - \
+        --chdir upendo_bakery
     
     # Health check path
     healthCheckPath: /health/
