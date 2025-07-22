@@ -1,82 +1,4 @@
-# Render Configuration for Upendo Bakery
-# This file defines the infrastructure for the Django application
-
-services:
-  - type: web
-    name: bk-sms
-    env: python
-    plan: free
-    
-    # Environment variables
-    envVars:
-      # Python configuration
-      - key: PYTHON_VERSION
-        value: 3.11.18  # Must match runtime.txt
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: PYTHONHASHSEED
-        value: "random"
-      
-      # Django configuration
-      - key: DJANGO_SETTINGS_MODULE
-        value: upendo_bakery.settings_prod
-      - key: SECRET_KEY
-        generateValue: true
-      - key: DEBUG
-        value: "False"
-      - key: ALLOWED_HOSTS
-        value: "*"  # In production, replace with your domain
-      
-      # Database configuration
-      - key: DATABASE_URL
-        fromDatabase:
-          name: bk-sms-db
-          property: connectionString
-        sync: true  # Ensure this is synced with the database
-      
-      # Static files configuration
-      - key: DISABLE_COLLECTSTATIC
-        value: "0"
-      - key: WHITENOISE_AUTOREFRESH
-        value: "1"
-      
-      # Application configuration
-      - key: ENVIRONMENT
-        value: production
-      - key: PORT
-        value: 10000
-    
-    # Build and start commands for Poetry
-    buildCommand: |
-      echo "🚀 Starting build process..."
-      python -m pip install --upgrade pip
-      pip install poetry
-      poetry install --no-dev --no-interaction --no-ansi
-      python manage.py collectstatic --noinput
-      python manage.py migrate
-      
-      # Create a simple health check endpoint
-      mkdir -p staticfiles/health
-      echo "<html><body><h1>Health Check</h1><p>OK</p></body></html>" > staticfiles/health/index.html
-    
-    # Using Procfile for start command to avoid duplication
-    startCommand: ""
-    
-    # Health check path
-    healthCheckPath: /health/
-    
-    # Auto-deploy from Git
-    autoDeploy: true
-    
-    # Buildpacks for Python
-    buildpacks:
-      - https://github.com/heroku/heroku-buildpack-python
-    
-    # Resource allocation
-    resources:
-      cpu: 1
-      memory: 1GB
-      disk: 10GB
+# render.yaml — Render Infrastructure for Upendo Bakery
 
 databases:
   - name: bk-sms-db
@@ -93,30 +15,28 @@ databases:
       maintenanceWorkMem: 50MB
       maxParallelWorkers: 2
 
-# Link database to web service
 services:
   - type: web
     name: bk-sms
     env: python
     plan: free
-    
-    # Link to the database
-    database:
-      name: bk-sms-db
-      databaseName: upendo_bakery
-      user: upendo_user
-    
+    autoDeploy: true
+    healthCheckPath: /health/
+    buildpacks:
+      - https://github.com/heroku/heroku-buildpack-python
+    resources:
+      cpu: 1
+      memory: 1GB
+      disk: 10GB
+
     # Environment variables
     envVars:
-      # Python configuration
       - key: PYTHON_VERSION
         value: 3.11.18
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: PYTHONHASHSEED
         value: "random"
-      
-      # Django configuration
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
       - key: SECRET_KEY
@@ -125,55 +45,31 @@ services:
         value: "False"
       - key: ALLOWED_HOSTS
         value: "*"
-      
-      # Database configuration (will be auto-populated by Render)
       - key: DATABASE_URL
         fromDatabase:
           name: bk-sms-db
           property: connectionString
-      
-      # Static files configuration
       - key: DISABLE_COLLECTSTATIC
         value: "0"
       - key: WHITENOISE_AUTOREFRESH
         value: "1"
-      
-      # Application configuration
       - key: ENVIRONMENT
         value: production
       - key: PORT
         value: 10000
-    
-    # Build and start commands
+
+    # Commands to build and start the app
     buildCommand: |
       echo "🚀 Starting build process..."
       python -m pip install --upgrade pip
-      pip install -r requirements.txt
+      pip install poetry
+      poetry install --no-dev --no-interaction --no-ansi
       python manage.py collectstatic --noinput
       python manage.py migrate --noinput
-      
-      # Create a simple health check endpoint
+
+      # Optional: add a basic health check page
       mkdir -p staticfiles/health
-      echo "<html><body><h1>Health Check</h1><p>OK</p></body>" > staticfiles/health/index.html
-    
-    # Health check path
-    healthCheckPath: /health/
-    
-    # Auto-deploy from Git
-    autoDeploy: true
-    
-    # Buildpacks for Python
-    buildpacks:
-      - https://github.com/heroku/heroku-buildpack-python
-    
-    # Resource allocation
-    resources:
-      cpu: 1
-      memory: 1GB
-      disk: 10GB
-    
-    # Backup settings
-    backupRetentionDays: 7
-    backupStartMinute: 0
-    backupStartHour: 2
-    backupDayOfWeek: 0  # Sunday
+      echo "<html><body><h1>Health Check</h1><p>OK</p></body></html>" > staticfiles/health/index.html
+
+    startCommand: |
+      poetry run gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
