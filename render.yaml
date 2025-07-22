@@ -76,14 +76,15 @@ services:
       python manage.py migrate --noinput
       
       # Start Gunicorn with explicit path to WSGI application
+      # Using the full path to ensure it's found
+      cd upendo_bakery
       python -m gunicorn upendo_bakery.wsgi:application \
         --bind 0.0.0.0:$PORT \
         --workers 3 \
         --timeout 120 \
         --log-level=debug \
         --access-logfile - \
-        --error-logfile - \
-        --chdir upendo_bakery
+        --error-logfile -
     
     # Health check path
     healthCheckPath: /health/
