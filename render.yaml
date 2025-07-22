@@ -7,30 +7,6 @@ services:
     env: python
     plan: free
     
-    # Build command will be handled by build.sh
-    buildCommand: |
-      echo "🚀 Starting build process..."
-      if [ -f "build.sh" ]; then
-        echo "✅ Found build.sh, making it executable..."
-        chmod +x build.sh
-        ./build.sh
-      else
-        echo "❌ Error: build.sh not found!"
-        echo "📂 Current directory contents:"
-        ls -la
-        exit 1
-      fi
-    
-    # Start command is handled by build.sh
-    startCommand: |
-      if [ -f "build.sh" ]; then
-        echo "🚀 Starting application using build.sh..."
-        ./build.sh
-      else
-        echo "❌ Error: build.sh not found for start command!"
-        exit 1
-      fi
-    
     # Environment variables
     envVars:
       # Python configuration
@@ -44,14 +20,12 @@ services:
       # Django configuration
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
-      - key: DEBUG
-        value: "False"
       - key: SECRET_KEY
         generateValue: true
+      - key: DEBUG
+        value: "False"
       - key: ALLOWED_HOSTS
-        value: "*"  # TODO: Replace with actual domain in production
-      - key: RENDER_EXTERNAL_HOSTNAME
-        sync: true
+        value: "*"  # In production, replace with your domain
       
       # Database configuration
       - key: DATABASE_URL
@@ -64,7 +38,7 @@ services:
       - key: DISABLE_COLLECTSTATIC
         value: "0"
       - key: WHITENOISE_AUTOREFRESH
-        value: "True"
+        value: "1"
       
       # Application configuration
       - key: ENVIRONMENT
@@ -72,9 +46,23 @@ services:
       - key: PORT
         value: 10000
     
-    # Health check configuration
+    # Build and start commands for Poetry
+    buildCommand: |
+      echo "🚀 Starting build process..."
+      python -m pip install --upgrade pip
+      pip install poetry
+      poetry install --no-dev --no-interaction --no-ansi
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    
+    startCommand: |
+      echo "🚀 Starting application..."
+      poetry run gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+    
+    # Health check path
     healthCheckPath: /health/
-    healthCheckTimeout: 30s
+    
+    # Auto-deploy from Git
     autoDeploy: true
     
     # Buildpacks for Python
@@ -88,10 +76,12 @@ services:
       disk: 10GB
 
 databases:
-  - name: bk-sms-db
-    databaseName: bk_sms
-    user: bk_sms_user
+  - type: postgres
+    name: bk-sms-db
     plan: free
+    databaseName: upendo_bakery
+    user: upendo_user
+    forceNew: false
     ipAllowList: []
     
     # Database configuration
