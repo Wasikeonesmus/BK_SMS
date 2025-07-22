@@ -1,42 +1,30 @@
-# render.yaml — Render Infrastructure for Upendo Bakery
-
+# render.yaml
 databases:
   - name: bk-sms-db
     databaseName: upendo_bakery
     user: upendo_user
     plan: free
-    forceNew: false
-    backupRetention: 7
-    ipAllowList: []
-    configuration:
-      maxConnections: 100
-      sharedBuffers: 100MB
-      workMem: 10MB
-      maintenanceWorkMem: 50MB
-      maxParallelWorkers: 2
 
 services:
   - type: web
     name: bk-sms
     env: python
     plan: free
-    autoDeploy: true
-    healthCheckPath: /health/
-    buildpacks:
-      - https://github.com/heroku/heroku-buildpack-python
-    resources:
-      cpu: 1
-      memory: 1GB
-      disk: 10GB
 
-    # Environment variables
+    buildCommand: |
+      echo "🚀 Starting build process..."
+      python -m pip install --upgrade pip
+      pip install -r requirements.txt
+      python manage.py migrate --noinput
+      python manage.py collectstatic --noinput
+      mkdir -p staticfiles/health
+      echo "<html><body><h1>Health Check</h1><p>OK</p></body></html>" > staticfiles/health/index.html
+
+    startCommand: gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
+
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.18
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: PYTHONHASHSEED
-        value: "random"
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
       - key: SECRET_KEY
@@ -45,31 +33,17 @@ services:
         value: "False"
       - key: ALLOWED_HOSTS
         value: "*"
-      - key: DATABASE_URL
-        fromDatabase:
-          name: bk-sms-db
-          property: connectionString
-      - key: DISABLE_COLLECTSTATIC
-        value: "0"
-      - key: WHITENOISE_AUTOREFRESH
-        value: "1"
       - key: ENVIRONMENT
         value: production
       - key: PORT
         value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bk-sms-db
+          property: connectionString
 
-    # Commands to build and start the app
-    buildCommand: |
-      echo "🚀 Starting build process..."
-      python -m pip install --upgrade pip
-      pip install poetry
-      poetry install --no-dev --no-interaction --no-ansi
-      python manage.py collectstatic --noinput
-      python manage.py migrate --noinput
+    healthCheckPath: /health/
+    autoDeploy: true
 
-      # Optional: add a basic health check page
-      mkdir -p staticfiles/health
-      echo "<html><body><h1>Health Check</h1><p>OK</p></body></html>" > staticfiles/health/index.html
-
-    startCommand: |
-      poetry run gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
+    buildpacks:
+      - https://github.com/heroku/heroku-buildpack-python
