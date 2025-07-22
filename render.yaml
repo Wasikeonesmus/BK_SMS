@@ -7,11 +7,28 @@ services:
       echo "🚀 Starting build process..."
       python -m pip install --upgrade pip
       pip install -r requirements.txt
+      
+      echo "🔄 Setting up static files..."
+      mkdir -p staticfiles
+      
+      echo "🛠️  Running migrations..."
       python manage.py migrate --noinput
+      
+      echo "👤 Creating default admin..."
       python manage.py create_default_admin
+      
+      echo "🗂️  Creating default categories..."
       python manage.py create_default_categories
+      
+      echo "📦 Collecting static files..."
       python manage.py collectstatic --noinput --clear
-    startCommand: gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
+      
+      echo "✅ Build completed successfully!"
+      
+    startCommand: |
+      echo "🚀 Starting application..."
+      gunicorn upendo_bakery.wsgi:application --bind 0.0.0.0:$PORT
+      
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
@@ -33,8 +50,22 @@ services:
         value: production
       - key: PORT
         value: 10000
+      - key: DISABLE_COLLECTSTATIC
+        value: "0"
+      - key: WHITENOISE_AUTOREFRESH
+        value: "True"
+        
     healthCheckPath: /health/
     autoDeploy: true
+
+    # Add buildpacks for Python and Node.js (if needed)
+    buildpacks:
+      - https://github.com/heroku/heroku-buildpack-python
+      - https://github.com/heroku/heroku-buildpack-nodejs
+
+    # Add a post-deploy script if needed
+    # postDeploy: 
+    #   ./post_deploy.sh
 
 databases:
   - name: bk-sms-db
@@ -42,3 +73,10 @@ databases:
     user: bk_sms_user
     plan: free
     ipAllowList: []
+    # Add database configuration
+    configuration:
+      maxConnections: 100
+      sharedBuffers: 100MB
+      workMem: 10MB
+      maintenanceWorkMem: 50MB
+      maxParallelWorkers: 2
