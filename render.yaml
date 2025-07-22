@@ -43,10 +43,7 @@ services:
         fromDatabase:
           name: bk-sms-db
           property: connectionString
-      - key: Database_URL
-        fromDatabase:
-          name: bk-sms-db
-          property: connectionString
+        sync: true  # Ensure this is synced with the database
       
       # Static files configuration
       - key: DISABLE_COLLECTSTATIC
