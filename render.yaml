@@ -1,21 +1,32 @@
+# Render Configuration for Upendo Bakery
+# This file defines the infrastructure for the Django application
+
 services:
   - type: web
     name: bk-sms
     env: python
     plan: free
     
-    # Make build.sh executable and run it
+    # Build command will be handled by build.sh
     buildCommand: |
       echo "🚀 Starting build process..."
       chmod +x build.sh
       ./build.sh
     
-    # Start command is now handled by build.sh
+    # Start command is handled by build.sh
     startCommand: ""
     
+    # Environment variables
     envVars:
+      # Python configuration
       - key: PYTHON_VERSION
-        value: 3.11.18  # Match the version in runtime.txt
+        value: 3.11.18  # Must match runtime.txt
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONHASHSEED
+        value: "random"
+      
+      # Django configuration
       - key: DJANGO_SETTINGS_MODULE
         value: upendo_bakery.settings_prod
       - key: DEBUG
@@ -23,25 +34,31 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: ALLOWED_HOSTS
-        value: "*"  # For now, restrict to specific domains in production
+        value: "*"  # TODO: Replace with actual domain in production
       - key: RENDER_EXTERNAL_HOSTNAME
         sync: true
+      
+      # Database configuration
       - key: DATABASE_URL
         fromDatabase:
           name: bk-sms-db
           property: connectionString
-      - key: ENVIRONMENT
-        value: production
-      - key: PORT
-        value: 10000
+      - key: Database_URL
+        fromDatabase:
+          name: bk-sms-db
+          property: connectionString
+      
+      # Static files configuration
       - key: DISABLE_COLLECTSTATIC
         value: "0"
       - key: WHITENOISE_AUTOREFRESH
         value: "True"
-      - key: PYTHONUNBUFFERED
-        value: "1"
-      - key: PYTHONHASHSEED
-        value: "random"
+      
+      # Application configuration
+      - key: ENVIRONMENT
+        value: production
+      - key: PORT
+        value: 10000
     
     # Health check configuration
     healthCheckPath: /health/
@@ -52,7 +69,7 @@ services:
     buildpacks:
       - https://github.com/heroku/heroku-buildpack-python
     
-    # Resource allocation (adjust based on your needs)
+    # Resource allocation
     resources:
       cpu: 1
       memory: 1GB
@@ -64,6 +81,8 @@ databases:
     user: bk_sms_user
     plan: free
     ipAllowList: []
+    
+    # Database configuration
     configuration:
       maxConnections: 100
       sharedBuffers: 100MB
@@ -71,7 +90,7 @@ databases:
       maintenanceWorkMem: 50MB
       maxParallelWorkers: 2
     
-    # Database backup settings (adjust as needed)
+    # Backup settings
     backupRetentionDays: 7
     backupStartMinute: 0
     backupStartHour: 2
